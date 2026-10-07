@@ -1,34 +1,48 @@
-function App() {
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import AuthPage from './pages/AuthPage';
+import StudentDashboard from './pages/StudentDashboard';
+import FacultyDashboard from './pages/FacultyDashboard';
+
+function AppContent() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Verifying Zero Trust session credentials...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
   return (
-    <div className="container">
-      <div className="badge">Academic Research Project</div>
-      <h1>ZeroTrust Assignment Submission Gateway</h1>
-      <p className="subtitle">
-        A secure assignment submission platform designed to demonstrate zero-trust
-        architecture principles for academic workflows.
-      </p>
-
-      <div className="status-card">
-        <span className="status-indicator"></span>
-        <span>Frontend Application Initialized Successfully</span>
-      </div>
-
-      <div className="info-grid">
-        <div className="info-item">
-          <h3>Environment</h3>
-          <p>React + Vite</p>
-        </div>
-        <div className="info-item">
-          <h3>Backend Target</h3>
-          <p>http://localhost:5000</p>
-        </div>
-        <div className="info-item">
-          <h3>Security Layer</h3>
-          <p>Cloudflare Zero Trust (Planned)</p>
-        </div>
-      </div>
+    <div className="app-layout">
+      <Navbar />
+      <main className="main-content">
+        {user.role === 'student' && <StudentDashboard />}
+        {user.role === 'faculty' && <FacultyDashboard />}
+        {user.role !== 'student' && user.role !== 'faculty' && (
+          <div className="dashboard-container">
+            <h2>Logged in as {user.role}</h2>
+            <p>Welcome, {user.name} ({user.email})</p>
+          </div>
+        )}
+      </main>
     </div>
-  )
+  );
 }
 
-export default App
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+export default App;

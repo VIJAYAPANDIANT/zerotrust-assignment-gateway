@@ -26,12 +26,15 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 - **Framework:** [React](https://react.dev/) (v19)
 - **Tooling & Bundler:** [Vite](https://vite.dev/)
 - **Language:** JavaScript (ES Modules)
-- **Styling:** CSS3
+- **State Management:** React Context API (`AuthContext`)
+- **Styling:** CSS3 (Zero-trust status cards, role badges, tabbed auth)
 
 ### Backend
 - **Runtime:** [Node.js](https://nodejs.org/) (LTS / v24+)
 - **Web Framework:** [Express.js](https://expressjs.com/)
-- **Architecture:** Modular MVC (Controllers, Routes, Middleware, Config)
+- **Architecture:** Modular MVC (Controllers, Routes, Middleware, Models, Config)
+- **Authentication:** `bcryptjs` password hashing + `jsonwebtoken` (JWT)
+- **Database Driver:** `pg` (PostgreSQL client pool for Supabase)
 - **API Protocol:** RESTful JSON
 
 ### Database & Storage
@@ -97,9 +100,10 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 | :---: | :--- | :--- | :---: |
 | **Phase 1** | **Foundational Architecture** | Baseline repository structure, React + Vite frontend, Express API server, and `/api/health` validation. | **Complete** |
 | **Phase 2** | **Backend Modularization & DB Schema** | Clean Express architecture, environment handling, CORS, and Supabase PostgreSQL schema (`users`, `assignments`, `submissions`, `access_logs`). | **Complete** |
-| **Phase 3** | **Core Application Services & Auth** | User authentication, assignment creation, submission processing, and audit logging. | *Upcoming* |
-| **Phase 4** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
-| **Phase 5** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
+| **Phase 3** | **Application Authentication** | Registration, login, bcrypt password hashing, JWT assertion tokens, `requireAuth` middleware, and role dashboards. | **Complete** |
+| **Phase 4** | **Assignment Services & Storage** | Assignment publishing, coursework submissions, and Supabase Storage integration. | *Upcoming* |
+| **Phase 5** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
+| **Phase 6** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
 
 ---
 
@@ -116,7 +120,7 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 │ id (PK, UUID)          │             │ id (PK, UUID)          │
 │ name                   │             │ title                  │
 │ email (UNIQUE)         │             │ description            │
-│ password               │             │ deadline               │
+│ password (bcrypt hash) │             │ deadline               │
 │ role (CHECK)           │             │ created_by (FK -> users│
 │ created_at             │             │ created_at             │
 └───────────┬────────────┘             └───────────┬────────────┘
@@ -144,7 +148,7 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
    - `id`: `UUID PRIMARY KEY DEFAULT gen_random_uuid()`
    - `name`: `VARCHAR(255) NOT NULL`
    - `email`: `VARCHAR(255) NOT NULL UNIQUE`
-   - `password`: `VARCHAR(255) NOT NULL` (salted hash)
+   - `password`: `VARCHAR(255) NOT NULL` (Salted bcrypt hash)
    - `role`: `VARCHAR(20) NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'faculty', 'admin'))`
    - `created_at`: `TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`
    - **Indexes:** `idx_users_email`, `idx_users_role`
@@ -164,9 +168,6 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
    - `student_id`: `UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
    - `file_url`: `TEXT NOT NULL` (Supabase Storage reference)
    - `submitted_at`: `TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`
-   - `status`: `VARCHAR(20) NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted', 'graded', 'resubmitted', 'late'))`
-   - `marks`: `NUMERIC(5, 2) DEFAULT NULL CHECK (marks IS NULL OR marks >= 0)`
-   - `feedback`: `TEXT DEFAULT NULL`
    - **Unique Constraint:** `uq_assignment_student UNIQUE (assignment_id, student_id)`
    - **Indexes:** `idx_submissions_assignment_id`, `idx_submissions_student_id`, `idx_submissions_status`
 
@@ -182,42 +183,74 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 
 ---
 
-## 6. How to Run `schema.sql` in Supabase
+## 6. Authentication & Authorization Architecture
 
-1. **Log in to Supabase:** Navigate to [https://supabase.com/dashboard](https://supabase.com/dashboard) and sign in.
-2. **Select or Create Project:** Open your existing project or create a new project (e.g., `zerotrust-gateway`).
-3. **Open SQL Editor:** In the left-hand navigation sidebar, click on the **SQL Editor** icon (represented by the `>_` terminal icon).
-4. **Create a New Query:** Click **+ New query**.
-5. **Paste Schema:** Open [`database/schema.sql`](file:///c:/Zero%20Trust/database/schema.sql) in your code editor, copy the entire SQL script, and paste it into the Supabase SQL Editor.
-6. **Execute Script:** Click the green **Run** button (or press `Ctrl + Enter` / `Cmd + Enter`).
-7. **Verify Table Creation:** Navigate to the **Table Editor** icon in the sidebar. You should see all 4 tables: `users`, `assignments`, `submissions`, and `access_logs`.
+### API Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Public | Registers a `student` or `faculty`. Self-registration as `admin` is blocked (403). |
+| `POST` | `/api/auth/login` | Public | Authenticates credentials with bcrypt and returns a signed JWT. |
+| `POST` | `/api/auth/logout` | Public | Terminates session and logs logout audit event. |
+| `GET` | `/api/auth/me` | Protected (`requireAuth`) | Retrieves the authenticated profile from the decoded JWT. |
+
+### JWT Specification
+Tokens are signed with `JWT_SECRET` using HMAC-SHA256:
+```json
+{
+  "id": "759be4c4-af8a-468e-9208-47b0f0710323",
+  "email": "student@univ.edu",
+  "role": "student",
+  "iat": 1791369747,
+  "exp": 1791456147
+}
+```
+
+### Reusable Middleware (`requireAuth`)
+- Extracts Bearer token from `Authorization: Bearer <token>`.
+- Cryptographically verifies signature against `JWT_SECRET`.
+- Validates user existence in the database.
+- Populates `req.user` with `{ id, name, email, role }`.
+- Rejects missing, invalid, or expired tokens with `401 Unauthorized`.
 
 ---
 
-## 7. Repository Structure
+## 7. How to Run `schema.sql` in Supabase
+
+1. **Log in to Supabase:** Navigate to [https://supabase.com/dashboard](https://supabase.com/dashboard) and sign in.
+2. **Select or Create Project:** Open your project dashboard (e.g., `zerotrust-gateway`).
+3. **Open SQL Editor:** In the left sidebar, click the **SQL Editor** icon (`>_`).
+4. **Create a New Query:** Click **+ New query**.
+5. **Paste Schema:** Copy the contents of [`database/schema.sql`](file:///c:/Zero%20Trust/database/schema.sql) and paste them into the editor.
+6. **Execute Script:** Click the green **Run** button (or press `Ctrl + Enter`).
+7. **Verify Table Creation:** Navigate to **Table Editor** to confirm that `users`, `assignments`, `submissions`, and `access_logs` are created.
+
+---
+
+## 8. Repository Structure
 
 ```
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # Reusable UI components
-│   │   ├── pages/            # Application views (Student, Faculty dashboards)
-│   │   ├── services/         # API and client network services
-│   │   ├── context/          # React application state and contexts
-│   │   ├── App.jsx           # Root application component
+│   │   ├── components/       # Reusable components (Navbar, ProtectedRoute)
+│   │   ├── pages/            # Views (AuthPage, StudentDashboard, FacultyDashboard)
+│   │   ├── services/         # API fetch client (api.js)
+│   │   ├── context/          # Authentication State Context (AuthContext.jsx)
+│   │   ├── App.jsx           # Root application router
 │   │   ├── main.jsx          # React DOM entry point
 │   │   └── index.css         # Baseline global styles
 │   ├── package.json          # Frontend dependencies and scripts
 │   └── vite.config.js        # Vite build and development configuration
 │
 ├── backend/
-│   ├── .env                  # Local environment configuration
+│   ├── .env                  # Environment variables (ignored by Git)
 │   ├── .env.example          # Environment template
 │   ├── src/
-│   │   ├── config/           # Centralized environment & CORS configuration
-│   │   ├── controllers/      # Health check and operational controllers
-│   │   ├── middleware/       # 404 handler and centralized error middleware
-│   │   ├── models/           # Models placeholder
-│   │   ├── routes/           # Modular route registry and health router
+│   │   ├── config/           # Database (db.js), Environment, CORS
+│   │   ├── controllers/      # auth.controller.js, health.controller.js
+│   │   ├── middleware/       # auth.middleware.js, errorHandler.js
+│   │   ├── models/           # user.model.js, audit.model.js
+│   │   ├── routes/           # auth.routes.js, health.routes.js, index.js
 │   │   └── server.js         # Express HTTP listener and graceful shutdown
 │   └── package.json          # Backend dependencies and scripts
 │
@@ -233,7 +266,7 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 
 ---
 
-## 8. Getting Started
+## 9. Getting Started
 
 ### Prerequisites
 - Node.js (v18.0.0 or higher, LTS recommended)
@@ -248,13 +281,21 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
    ```bash
    npm install
    ```
-3. Start the Express server:
+3. Configure environment variables in `backend/.env`:
+   ```env
+   PORT=5000
+   NODE_ENV=development
+   CLIENT_URL=http://localhost:5173
+   JWT_SECRET=your_jwt_secret_key_here
+   DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres
+   ```
+4. Start the Express server:
    ```bash
    npm run dev
    # or
    npm start
    ```
-4. Verify the health endpoint at `http://localhost:5000/api/health`.
+5. Verify the health endpoint at `http://localhost:5000/api/health`.
 
 ### Frontend Setup
 1. Navigate to the frontend directory:
@@ -269,4 +310,4 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
    ```bash
    npm run dev
    ```
-4. Open the development URL in your browser (defaults to `http://localhost:5173`).
+4. Open the development URL in your browser (`http://localhost:5173`).

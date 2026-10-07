@@ -44,5 +44,6 @@ export const requireRole = (allowedRoles) => {
   };
 };
 
-// Convenience shorthand for student-only routes
+// Convenience shorthands
 export const requireStudent = requireRole('student');
+export const requireFaculty = requireRole('faculty');

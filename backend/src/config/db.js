@@ -146,7 +146,41 @@ function handleInMemoryQuery(text, params) {
     return { rows: [safeRecord] };
   }
 
-  // 4. SELECT assignment by id
+  // 4a. INSERT INTO assignments
+  if (/INSERT INTO assignments/is.test(cleanSql)) {
+    const [id, title, description, deadline, createdBy] = params;
+    const record = {
+      id: id || crypto.randomUUID(),
+      title,
+      description,
+      deadline,
+      created_by: createdBy,
+      faculty_name: 'Course Instructor',
+      created_at: new Date().toISOString(),
+    };
+    inMemoryData.assignments.unshift(record);
+    return { rows: [record] };
+  }
+
+  // 4b. SELECT assignments created by faculty member
+  if (/SELECT.*FROM assignments.*WHERE.*created_by = \$1/is.test(cleanSql)) {
+    const facultyId = params[0];
+    const facultyAssignments = inMemoryData.assignments.filter(
+      (a) => a.created_by === facultyId || a.created_by === 'faculty-evaluator-uuid'
+    );
+    const enriched = facultyAssignments.map((a) => {
+      const subs = inMemoryData.submissions.filter((s) => s.assignment_id === a.id);
+      const graded = subs.filter((s) => s.marks !== null).length;
+      return {
+        ...a,
+        total_submissions: subs.length,
+        graded_submissions: graded,
+      };
+    });
+    return { rows: enriched };
+  }
+
+  // 4c. SELECT assignment by id
   if (/SELECT.*FROM assignments.*WHERE.*id = \$1/is.test(cleanSql)) {
     const idToFind = params[0];
     const assignment = inMemoryData.assignments.find((a) => a.id === idToFind);
@@ -158,7 +192,56 @@ function handleInMemoryQuery(text, params) {
     return { rows: [...inMemoryData.assignments] };
   }
 
-  // 6. SELECT submissions for a student (with assignment JOIN)
+  // 6a. SELECT submissions for faculty
+  if (/SELECT.*FROM submissions.*WHERE.*created_by = \$1/is.test(cleanSql)) {
+    const facultyId = params[0];
+    const facultyAssignIds = new Set(
+      inMemoryData.assignments
+        .filter((a) => a.created_by === facultyId || a.created_by === 'faculty-evaluator-uuid')
+        .map((a) => a.id)
+    );
+
+    const submissions = inMemoryData.submissions
+      .filter((s) => facultyAssignIds.size === 0 || facultyAssignIds.has(s.assignment_id))
+      .map((s) => {
+        const student = inMemoryData.users.find((u) => u.id === s.student_id);
+        const assign = inMemoryData.assignments.find((a) => a.id === s.assignment_id);
+        return {
+          ...s,
+          student_name: student ? student.name : 'Enrolled Student',
+          student_email: student ? student.email : 'student@univ.edu',
+          assignment_title: assign ? assign.title : 'Coursework Assignment',
+          assignment_deadline: assign ? assign.deadline : null,
+        };
+      });
+    return { rows: submissions };
+  }
+
+  // 6b. SELECT single submission by ID with full details
+  if (/SELECT.*FROM submissions.*WHERE.*s\.id = \$1/is.test(cleanSql)) {
+    const subId = params[0];
+    const s = inMemoryData.submissions.find((sub) => sub.id === subId);
+    if (!s) return { rows: [] };
+
+    const student = inMemoryData.users.find((u) => u.id === s.student_id);
+    const assign = inMemoryData.assignments.find((a) => a.id === s.assignment_id);
+
+    return {
+      rows: [
+        {
+          ...s,
+          student_name: student ? student.name : 'Enrolled Student',
+          student_email: student ? student.email : 'student@univ.edu',
+          assignment_title: assign ? assign.title : 'Coursework Assignment',
+          assignment_description: assign ? assign.description : '',
+          assignment_deadline: assign ? assign.deadline : null,
+          created_by: assign ? assign.created_by : null,
+        },
+      ],
+    };
+  }
+
+  // 6c. SELECT submissions for a student (with assignment JOIN)
   if (/SELECT.*FROM submissions.*WHERE.*student_id/is.test(cleanSql)) {
     const studentId = params[0];
     const studentSubmissions = inMemoryData.submissions
@@ -185,7 +268,23 @@ function handleInMemoryQuery(text, params) {
     return { rows: sub ? [{ ...sub }] : [] };
   }
 
-  // 8. INSERT INTO submissions
+  // 8a. UPDATE submissions (grading)
+  if (/UPDATE submissions.*SET marks = \$1/is.test(cleanSql)) {
+    const [marks, feedback, id] = params;
+    const index = inMemoryData.submissions.findIndex((s) => s.id === id);
+    if (index >= 0) {
+      inMemoryData.submissions[index] = {
+        ...inMemoryData.submissions[index],
+        marks: parseFloat(marks),
+        feedback,
+        status: 'graded',
+      };
+      return { rows: [inMemoryData.submissions[index]] };
+    }
+    return { rows: [] };
+  }
+
+  // 8b. INSERT INTO submissions
   if (/INSERT INTO submissions/is.test(cleanSql)) {
     const [id, assignmentId, studentId, fileUrl] = params;
     // Check if duplicate

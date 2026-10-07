@@ -1028,3 +1028,200 @@ body {
   background-color: #dcfce7;
   color: #15803d;
 }
+
+/* Faculty Dashboard & Management Styles */
+.text-orange {
+  color: #ea580c;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.text-sm {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+}
+
+.status-tags-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  background-color: #ffffff;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-btn:hover {
+  color: #0f172a;
+}
+
+.filter-btn.active {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+/* Faculty Tables */
+.faculty-table-wrapper {
+  overflow-x: auto;
+}
+
+.faculty-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.faculty-table th {
+  background-color: #f8fafc;
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.faculty-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.faculty-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.sub-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.badge-grade-done {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  background-color: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.badge-grade-pending {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  background-color: #fef3c7;
+  color: #b45309;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.btn-table-action {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  background-color: #0284c7;
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.btn-table-action:hover {
+  background-color: #0369a1;
+}
+
+.breadcrumb-link {
+  display: inline-block;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb-link:hover {
+  color: #0284c7;
+}
+
+/* Submission Evaluation Detail View */
+.detail-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.grading-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-box {
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+}
+
+.prompt-text {
+  font-size: 0.875rem;
+  color: #334155;
+  margin-top: 0.35rem;
+  line-height: 1.5;
+}
+
+.artifact-download-card {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.btn-download-artifact {
+  display: block;
+  margin-top: 0.35rem;
+  color: #15803d;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.grading-action-bar {
+  margin-top: 0.75rem;
+}

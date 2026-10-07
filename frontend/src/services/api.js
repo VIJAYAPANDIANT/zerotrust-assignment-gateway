@@ -126,3 +126,64 @@ export async function submitAssignment(token, { assignmentId, file, fileUrl }) {
 
   return handleResponse(response);
 }
+
+// -----------------------------------------------------------------------------
+// Faculty Specific Endpoints
+// -----------------------------------------------------------------------------
+
+export async function createAssignment(token, { title, description, deadline }) {
+  const response = await fetch(`${API_BASE_URL}/assignments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ title, description, deadline }),
+  });
+  return handleResponse(response);
+}
+
+export async function getFacultyAssignments(token) {
+  const response = await fetch(`${API_BASE_URL}/faculty/assignments`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function getFacultySubmissions(token) {
+  const response = await fetch(`${API_BASE_URL}/faculty/submissions`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function getFacultySubmissionById(token, id) {
+  const response = await fetch(`${API_BASE_URL}/faculty/submissions/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function gradeSubmission(token, id, { marks, feedback }) {
+  const response = await fetch(`${API_BASE_URL}/faculty/submissions/${id}/grade`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ marks, feedback }),
+  });
+  return handleResponse(response);
+}

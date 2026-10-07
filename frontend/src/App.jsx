@@ -6,6 +6,9 @@ import StudentDashboard from './pages/StudentDashboard';
 import StudentAssignments from './pages/StudentAssignments';
 import StudentSubmissions from './pages/StudentSubmissions';
 import FacultyDashboard from './pages/FacultyDashboard';
+import FacultyAssignments from './pages/FacultyAssignments';
+import FacultySubmissions from './pages/FacultySubmissions';
+import FacultySubmissionDetail from './pages/FacultySubmissionDetail';
 
 // Protected Route wrapper enforcing student role
 function StudentRoute({ children }) {
@@ -15,7 +18,7 @@ function StudentRoute({ children }) {
     return (
       <div className="loading-screen">
         <div className="spinner"></div>
-        <p>Verifying session credentials...</p>
+        <p>Verifying student session...</p>
       </div>
     );
   }
@@ -25,6 +28,30 @@ function StudentRoute({ children }) {
   }
 
   if (user.role !== 'student') {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+// Protected Route wrapper enforcing faculty role
+function FacultyRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Verifying faculty credentials...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (user.role !== 'faculty') {
     return <Navigate to="/" replace />;
   }
 
@@ -57,7 +84,7 @@ function AppContent() {
               ) : user.role === 'student' ? (
                 <Navigate to="/student/dashboard" replace />
               ) : (
-                <FacultyDashboard />
+                <Navigate to="/faculty/dashboard" replace />
               )
             }
           />
@@ -85,6 +112,40 @@ function AppContent() {
               <StudentRoute>
                 <StudentSubmissions />
               </StudentRoute>
+            }
+          />
+
+          {/* Faculty Specific Routes */}
+          <Route
+            path="/faculty/dashboard"
+            element={
+              <FacultyRoute>
+                <FacultyDashboard />
+              </FacultyRoute>
+            }
+          />
+          <Route
+            path="/faculty/assignments"
+            element={
+              <FacultyRoute>
+                <FacultyAssignments />
+              </FacultyRoute>
+            }
+          />
+          <Route
+            path="/faculty/submissions"
+            element={
+              <FacultyRoute>
+                <FacultySubmissions />
+              </FacultyRoute>
+            }
+          />
+          <Route
+            path="/faculty/submissions/:id"
+            element={
+              <FacultyRoute>
+                <FacultySubmissionDetail />
+              </FacultyRoute>
             }
           />
 

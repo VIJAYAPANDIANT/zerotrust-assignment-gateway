@@ -3,6 +3,7 @@ import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import assignmentRoutes from './assignment.routes.js';
 import submissionRoutes from './submission.routes.js';
+import facultyRoutes from './faculty.routes.js';
 
 const router = Router();
 
@@ -11,5 +12,6 @@ router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/submissions', submissionRoutes);
+router.use('/faculty', facultyRoutes);
 
 export default router;

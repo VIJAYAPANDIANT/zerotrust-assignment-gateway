@@ -102,7 +102,7 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 | **Phase 2** | **Backend Modularization & DB Schema** | Clean Express architecture, environment handling, CORS, and Supabase PostgreSQL schema (`users`, `assignments`, `submissions`, `access_logs`). | **Complete** |
 | **Phase 3** | **Application Authentication** | Registration, login, bcrypt password hashing, JWT assertion tokens, `requireAuth` middleware, and role dashboards. | **Complete** |
 | **Phase 4** | **Student Dashboard & Submissions** | Assignment browsing, assignment details, multipart coursework upload, student submission history, and RBAC isolation. | **Complete** |
-| **Phase 5** | **Faculty Evaluation Dashboard** | Coursework authoring, student submission grading, marks assignment, and evaluator feedback workflows. | *Upcoming* |
+| **Phase 5** | **Faculty Evaluation Dashboard** | Coursework authoring, student submission grading, marks assignment, and evaluator feedback workflows. | **Complete** |
 | **Phase 6** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
 | **Phase 7** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
 
@@ -203,6 +203,16 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 | `GET` | `/api/assignments/:id` | Authenticated | Retrieves specific assignment details, prompt, and student submission status. |
 | `GET` | `/api/submissions/my` | `requireAuth` + `Student` | Retrieves all submissions authored by the calling student with evaluation marks and feedback. |
 | `POST` | `/api/submissions` | `requireAuth` + `Student` | Submits assignment artifact via multipart file upload or custom artifact URL. |
+
+### Faculty Evaluation Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/assignments` | `requireAuth` + `Faculty` | Authors a new coursework prompt with deadline. |
+| `GET` | `/api/faculty/assignments` | `requireAuth` + `Faculty` | Lists assignments created by this instructor with submission & grading metrics. |
+| `GET` | `/api/faculty/submissions` | `requireAuth` + `Faculty` | Retrieves all student submissions across courses evaluated by this faculty. |
+| `GET` | `/api/faculty/submissions/:id` | `requireAuth` + `Faculty` | Retrieves complete evaluation details for a specific student submission. |
+| `POST` | `/api/faculty/submissions/:id/grade` | `requireAuth` + `Faculty` | Evaluates a student submission, assigning marks (0-100) and instructor feedback remarks. |
 
 ### JWT Specification
 Tokens are signed with `JWT_SECRET` using HMAC-SHA256:

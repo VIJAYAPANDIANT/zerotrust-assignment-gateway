@@ -49,4 +49,53 @@ export const SubmissionModel = {
     );
     return res.rows[0];
   },
+  /**
+   * Find all submissions for assignments created by a faculty member
+   */
+  async findByFaculty(facultyId) {
+    const res = await query(
+      `SELECT s.id, s.assignment_id, s.student_id, s.file_url, s.submitted_at, s.status, s.marks, s.feedback,
+              u.name as student_name, u.email as student_email,
+              a.title as assignment_title, a.deadline as assignment_deadline
+       FROM submissions s
+       JOIN assignments a ON s.assignment_id = a.id
+       JOIN users u ON s.student_id = u.id
+       WHERE a.created_by = $1
+       ORDER BY s.submitted_at DESC`,
+      [facultyId]
+    );
+    return res.rows;
+  },
+
+  /**
+   * Find submission by ID with full student and assignment details
+   */
+  async findByIdWithDetails(id) {
+    const res = await query(
+      `SELECT s.id, s.assignment_id, s.student_id, s.file_url, s.submitted_at, s.status, s.marks, s.feedback,
+              u.name as student_name, u.email as student_email,
+              a.title as assignment_title, a.description as assignment_description,
+              a.deadline as assignment_deadline, a.created_by
+       FROM submissions s
+       JOIN assignments a ON s.assignment_id = a.id
+       JOIN users u ON s.student_id = u.id
+       WHERE s.id = $1`,
+      [id]
+    );
+    return res.rows[0] || null;
+  },
+
+  /**
+   * Grade a submission and record feedback
+   */
+  async gradeSubmission({ id, marks, feedback }) {
+    const res = await query(
+      `UPDATE submissions
+       SET marks = $1, feedback = $2, status = 'graded'
+       WHERE id = $3
+       RETURNING id, assignment_id, student_id, file_url, submitted_at, status, marks, feedback`,
+      [marks, feedback || null, id]
+    );
+    return res.rows[0] || null;
+  },
 };

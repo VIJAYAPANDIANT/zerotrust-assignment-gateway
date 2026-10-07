@@ -96,3 +96,51 @@ export const getAssignmentById = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * POST /api/assignments
+ * Creates a new coursework assignment (Faculty only)
+ */
+export const createAssignment = async (req, res, next) => {
+  try {
+    const { title, description, deadline } = req.body;
+
+    if (!title || !deadline) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assignment title and deadline are required.',
+      });
+    }
+
+    const parsedDeadline = new Date(deadline);
+    if (isNaN(parsedDeadline.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid deadline format. Please provide a valid date.',
+      });
+    }
+
+    const assignment = await AssignmentModel.create({
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      deadline: parsedDeadline.toISOString(),
+      createdBy: req.user.id,
+    });
+
+    await AuditModel.logAccess({
+      userId: req.user.id,
+      endpoint: '/api/assignments',
+      action: 'CREATE_ASSIGNMENT',
+      result: 'success',
+      ipAddress: req.ip,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Assignment created successfully.',
+      data: assignment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

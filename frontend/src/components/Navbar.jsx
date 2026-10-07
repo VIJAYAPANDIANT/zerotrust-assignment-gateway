@@ -40,6 +40,30 @@ export default function Navbar() {
             </NavLink>
           </nav>
         )}
+
+        {/* Faculty Navigation Links */}
+        {user.role === 'faculty' && (
+          <nav className="nav-links">
+            <NavLink
+              to="/faculty/dashboard"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/faculty/assignments"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              Coursework
+            </NavLink>
+            <NavLink
+              to="/faculty/submissions"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              Student Submissions
+            </NavLink>
+          </nav>
+        )}
       </div>
 
       <div className="navbar-user">

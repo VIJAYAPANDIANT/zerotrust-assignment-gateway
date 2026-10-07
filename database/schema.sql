@@ -1,0 +1,18 @@
+-- ==============================================================================
+-- ZeroTrust Assignment Submission Gateway
+-- Database: Supabase PostgreSQL Schema
+-- ==============================================================================
+--
+-- Notice:
+-- Database tables and constraints are intentionally deferred to subsequent
+-- development phases per project milestones.
+--
+-- Planned Entities:
+--   - users (profiles, roles: student, instructor, admin)
+--   - assignments (metadata, deadlines, allowed MIME types)
+--   - submissions (student references, storage paths, status, timestamps)
+--   - access_audit_logs (zero-trust identity verification & access logging)
+--
+-- Row Level Security (RLS) policies will be configured in coordination with
+-- Supabase Auth and Cloudflare Zero Trust headers.
+-- ==============================================================================

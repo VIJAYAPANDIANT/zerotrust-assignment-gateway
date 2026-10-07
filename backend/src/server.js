@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { config } from './config/environment.js';
 import { corsOptions } from './config/cors.js';
 import apiRoutes from './routes/index.js';
@@ -14,16 +15,19 @@ app.use(cors(corsOptions));
 // 2. JSON Request Body Parsing
 app.use(express.json());
 
-// 3. API Routes
+// 3. Static Artifacts Directory
+app.use('/uploads', express.static(path.resolve('uploads')));
+
+// 4. API Routes
 app.use('/api', apiRoutes);
 
-// 4. 404 Handler for undefined routes
+// 5. 404 Handler for undefined routes
 app.use(notFoundHandler);
 
-// 5. Centralized Error-Handling Middleware
+// 6. Centralized Error-Handling Middleware
 app.use(errorHandler);
 
-// 6. Clean Server Startup Process
+// 7. Clean Server Startup Process
 const server = app.listen(config.port, () => {
   console.log('====================================================');
   console.log(' ZeroTrust Assignment Gateway API');

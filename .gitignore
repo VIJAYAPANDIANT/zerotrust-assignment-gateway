@@ -25,6 +25,8 @@ dist/
 dist-ssr/
 build/
 *.local
+uploads/*
+!uploads/.gitkeep
 
 # Environment variables & secrets
 .env

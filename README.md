@@ -101,9 +101,10 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 | **Phase 1** | **Foundational Architecture** | Baseline repository structure, React + Vite frontend, Express API server, and `/api/health` validation. | **Complete** |
 | **Phase 2** | **Backend Modularization & DB Schema** | Clean Express architecture, environment handling, CORS, and Supabase PostgreSQL schema (`users`, `assignments`, `submissions`, `access_logs`). | **Complete** |
 | **Phase 3** | **Application Authentication** | Registration, login, bcrypt password hashing, JWT assertion tokens, `requireAuth` middleware, and role dashboards. | **Complete** |
-| **Phase 4** | **Assignment Services & Storage** | Assignment publishing, coursework submissions, and Supabase Storage integration. | *Upcoming* |
-| **Phase 5** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
-| **Phase 6** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
+| **Phase 4** | **Student Dashboard & Submissions** | Assignment browsing, assignment details, multipart coursework upload, student submission history, and RBAC isolation. | **Complete** |
+| **Phase 5** | **Faculty Evaluation Dashboard** | Coursework authoring, student submission grading, marks assignment, and evaluator feedback workflows. | *Upcoming* |
+| **Phase 6** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
+| **Phase 7** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
 
 ---
 
@@ -166,7 +167,7 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
    - `id`: `UUID PRIMARY KEY DEFAULT gen_random_uuid()`
    - `assignment_id`: `UUID NOT NULL REFERENCES assignments(id) ON DELETE CASCADE`
    - `student_id`: `UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE`
-   - `file_url`: `TEXT NOT NULL` (Supabase Storage reference)
+   - `file_url`: `TEXT NOT NULL` (Supabase Storage reference / local uploads)
    - `submitted_at`: `TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`
    - **Unique Constraint:** `uq_assignment_student UNIQUE (assignment_id, student_id)`
    - **Indexes:** `idx_submissions_assignment_id`, `idx_submissions_student_id`, `idx_submissions_status`
@@ -183,9 +184,9 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 
 ---
 
-## 6. Authentication & Authorization Architecture
+## 6. Authentication & API Endpoints
 
-### API Endpoints
+### Authentication Endpoints
 
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :--- | :--- |
@@ -193,6 +194,15 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 | `POST` | `/api/auth/login` | Public | Authenticates credentials with bcrypt and returns a signed JWT. |
 | `POST` | `/api/auth/logout` | Public | Terminates session and logs logout audit event. |
 | `GET` | `/api/auth/me` | Protected (`requireAuth`) | Retrieves the authenticated profile from the decoded JWT. |
+
+### Student & Coursework Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/assignments` | Authenticated | Lists all available coursework assignments with deadline and submission status. |
+| `GET` | `/api/assignments/:id` | Authenticated | Retrieves specific assignment details, prompt, and student submission status. |
+| `GET` | `/api/submissions/my` | `requireAuth` + `Student` | Retrieves all submissions authored by the calling student with evaluation marks and feedback. |
+| `POST` | `/api/submissions` | `requireAuth` + `Student` | Submits assignment artifact via multipart file upload or custom artifact URL. |
 
 ### JWT Specification
 Tokens are signed with `JWT_SECRET` using HMAC-SHA256:

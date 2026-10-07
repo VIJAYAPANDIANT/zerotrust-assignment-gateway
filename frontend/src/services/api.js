@@ -16,35 +16,28 @@ async function handleResponse(response) {
   return data;
 }
 
-/**
- * Register a new user
- */
+// -----------------------------------------------------------------------------
+// Authentication Endpoints
+// -----------------------------------------------------------------------------
+
 export async function registerUser({ name, email, password, role }) {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, password, role }),
   });
-
   return handleResponse(response);
 }
 
-/**
- * Authenticate existing user
- */
 export async function loginUser({ email, password }) {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-
   return handleResponse(response);
 }
 
-/**
- * Fetch currently authenticated user profile
- */
 export async function getMe(token) {
   const response = await fetch(`${API_BASE_URL}/auth/me`, {
     method: 'GET',
@@ -53,13 +46,9 @@ export async function getMe(token) {
       Authorization: `Bearer ${token}`,
     },
   });
-
   return handleResponse(response);
 }
 
-/**
- * Logout user session
- */
 export async function logoutUser(token) {
   const response = await fetch(`${API_BASE_URL}/auth/logout`, {
     method: 'POST',
@@ -67,6 +56,72 @@ export async function logoutUser(token) {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
+  });
+  return handleResponse(response);
+}
+
+// -----------------------------------------------------------------------------
+// Assignment Endpoints
+// -----------------------------------------------------------------------------
+
+export async function getAssignments(token) {
+  const response = await fetch(`${API_BASE_URL}/assignments`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function getAssignmentById(token, id) {
+  const response = await fetch(`${API_BASE_URL}/assignments/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+// -----------------------------------------------------------------------------
+// Submission Endpoints
+// -----------------------------------------------------------------------------
+
+export async function getMySubmissions(token) {
+  const response = await fetch(`${API_BASE_URL}/submissions/my`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function submitAssignment(token, { assignmentId, file, fileUrl }) {
+  const headers = { Authorization: `Bearer ${token}` };
+  let body;
+
+  if (file) {
+    const formData = new FormData();
+    formData.append('assignment_id', assignmentId);
+    formData.append('file', file);
+    body = formData;
+  } else {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify({
+      assignment_id: assignmentId,
+      file_url: fileUrl,
+    });
+  }
+
+  const response = await fetch(`${API_BASE_URL}/submissions`, {
+    method: 'POST',
+    headers,
+    body,
   });
 
   return handleResponse(response);

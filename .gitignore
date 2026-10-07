@@ -27,6 +27,8 @@ build/
 *.local
 uploads/*
 !uploads/.gitkeep
+storage/*
+backend/storage/*
 
 # Environment variables & secrets
 .env

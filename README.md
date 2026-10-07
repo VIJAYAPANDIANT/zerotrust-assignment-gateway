@@ -103,8 +103,9 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 | **Phase 3** | **Application Authentication** | Registration, login, bcrypt password hashing, JWT assertion tokens, `requireAuth` middleware, and role dashboards. | **Complete** |
 | **Phase 4** | **Student Dashboard & Submissions** | Assignment browsing, assignment details, multipart coursework upload, student submission history, and RBAC isolation. | **Complete** |
 | **Phase 5** | **Faculty Evaluation Dashboard** | Coursework authoring, student submission grading, marks assignment, and evaluator feedback workflows. | **Complete** |
-| **Phase 6** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
-| **Phase 7** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
+| **Phase 6** | **Supabase Storage & Zero Trust File Access** | Private bucket (`assignments`), PDF/DOC/DOCX validation, 15MB size limits, student isolation, signed URLs, and audit logging. | **Complete** |
+| **Phase 7** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
+| **Phase 8** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
 
 ---
 
@@ -247,7 +248,33 @@ Tokens are signed with `JWT_SECRET` using HMAC-SHA256:
 
 ---
 
-## 8. Repository Structure
+## 8. Supabase Storage Architecture & Zero Trust File Security
+
+Student coursework artifacts are stored in a private **Supabase Storage** bucket (`assignments`). To adhere strictly to Zero Trust principles ("never trust, always verify"), files are **never** exposed publicly or served statically without continuous authentication and least-privilege authorization.
+
+### Security & Operational Specifications:
+- **Storage Bucket:** `assignments` (strictly private, non-public).
+- **Permitted File Formats:** PDF (`.pdf`), Microsoft Word (`.doc`, `.docx`).
+- **File Size Validation:** Strict 15 MB limit per upload, enforced at both frontend client and Multer backend middleware.
+- **Upload Pipeline (`POST /api/submissions`):**
+  1. Validate JWT session via `requireAuth`.
+  2. Validate role via `requireStudent` (`req.user.role === 'student'`).
+  3. Validate assignment exists in database (`AssignmentModel.findById`).
+  4. Stream file buffer to Supabase Storage private bucket `assignments`.
+  5. Store relative storage path in `submissions.file_url`.
+  6. Upsert submission record with status `submitted` or `resubmitted`.
+  7. Record an immutable audit log entry in `access_logs` (`SUBMIT_ASSIGNMENT_STORAGE_UPLOAD`).
+- **Secure File Retrieval (`GET /api/submissions/:id/file`):**
+  - Continuous identity validation via `requireAuth`.
+  - Zero Trust boundary check: If caller is a student, verifies `submission.student_id === req.user.id`.
+  - Unauthorized cross-student access is blocked immediately with `HTTP 403 Forbidden` and logged as a security violation.
+  - Faculty evaluators have verified access for grading and feedback.
+  - Returns a time-limited signed URL (300-second TTL) or streams authenticated bytes.
+- **Resilient Fallback Mode:** Operates with a private local filesystem store (`backend/storage/assignments/...`) when running in offline or local test environments, maintaining identical Zero Trust authorization policies.
+
+---
+
+## 9. Repository Structure
 
 ```
 ├── frontend/
@@ -286,7 +313,7 @@ Tokens are signed with `JWT_SECRET` using HMAC-SHA256:
 
 ---
 
-## 9. Getting Started
+## 10. Getting Started
 
 ### Prerequisites
 - Node.js (v18.0.0 or higher, LTS recommended)

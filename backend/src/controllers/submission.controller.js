@@ -1,6 +1,7 @@
 import { SubmissionModel } from '../models/submission.model.js';
 import { AssignmentModel } from '../models/assignment.model.js';
 import { AuditModel } from '../models/audit.model.js';
+import { storageService } from '../services/storage.service.js';
 
 /**
  * GET /api/submissions/my
@@ -30,7 +31,7 @@ export const getMySubmissions = async (req, res, next) => {
 
 /**
  * POST /api/submissions
- * Submits coursework for an assignment
+ * Submits coursework for an assignment using Supabase Storage
  */
 export const submitAssignment = async (req, res, next) => {
   try {
@@ -44,7 +45,7 @@ export const submitAssignment = async (req, res, next) => {
       });
     }
 
-    // Verify assignment exists
+    // 1. Verify assignment exists
     const assignment = await AssignmentModel.findById(assignment_id);
     if (!assignment) {
       return res.status(404).json({
@@ -53,42 +54,145 @@ export const submitAssignment = async (req, res, next) => {
       });
     }
 
-    // Determine artifact URL: from uploaded file or from provided file_url
-    let fileUrl = req.body.file_url;
+    let fileUrl = null;
+    let storageProvider = null;
+
+    // 2. Upload file to Supabase Storage if file attached
     if (req.file) {
-      fileUrl = `/uploads/${req.file.filename}`;
+      const uploadResult = await storageService.uploadSubmissionFile({
+        studentId,
+        assignmentId: assignment_id,
+        fileBuffer: req.file.buffer,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+      });
+
+      fileUrl = uploadResult.storagePath;
+      storageProvider = uploadResult.provider;
+    } else if (req.body.file_url) {
+      fileUrl = req.body.file_url.trim();
+      storageProvider = 'external_url';
     }
 
     if (!fileUrl) {
       return res.status(400).json({
         success: false,
-        message: 'Either a submission file or file_url must be provided.',
+        message: 'Please choose a valid PDF, DOC, or DOCX file to submit.',
       });
     }
 
-    // Save submission
+    // 3. Save the file URL / path in submissions table
     const submission = await SubmissionModel.createOrUpdate({
       assignmentId: assignment_id,
       studentId,
       fileUrl,
     });
 
+    // 4. Create an access log entry
     await AuditModel.logAccess({
       userId: studentId,
       endpoint: '/api/submissions',
-      action: 'SUBMIT_ASSIGNMENT',
+      action: 'SUBMIT_ASSIGNMENT_STORAGE_UPLOAD',
       result: 'success',
       ipAddress: req.ip,
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Assignment submitted successfully.',
+      message: 'Assignment coursework submitted successfully to Supabase Storage.',
       data: {
         ...submission,
+        storage_provider: storageProvider,
         assignment_title: assignment.title,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/submissions/:id/file
+ * Secure retrieval of submission artifact
+ * Enforces Zero Trust:
+ * - Students can ONLY access their own submission files
+ * - Evaluator faculty and administrators are permitted
+ * - Access attempts are logged in access_logs
+ */
+export const getSubmissionFile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    const submission = await SubmissionModel.findByIdWithDetails(id);
+    if (!submission) {
+      await AuditModel.logAccess({
+        userId: user.id,
+        endpoint: `/api/submissions/${id}/file`,
+        action: 'RETRIEVE_SUBMISSION_FILE_NOT_FOUND',
+        result: 'failure',
+        ipAddress: req.ip,
+      });
+
+      return res.status(404).json({
+        success: false,
+        message: 'Submission record not found.',
+      });
+    }
+
+    // Zero Trust Policy Enforcement: Students can ONLY access their own submissions
+    if (user.role === 'student' && submission.student_id !== user.id) {
+      await AuditModel.logAccess({
+        userId: user.id,
+        endpoint: `/api/submissions/${id}/file`,
+        action: 'UNAUTHORIZED_CROSS_STUDENT_FILE_ACCESS_BLOCKED',
+        result: 'denied',
+        ipAddress: req.ip,
+      });
+
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: Zero Trust policy prevents accessing another student’s submission file.',
+      });
+    }
+
+    // Log authorized file access
+    await AuditModel.logAccess({
+      userId: user.id,
+      endpoint: `/api/submissions/${id}/file`,
+      action: 'RETRIEVE_SUBMISSION_FILE_AUTHORIZED',
+      result: 'success',
+      ipAddress: req.ip,
+    });
+
+    // Generate secure temporary access or file stream
+    const access = await storageService.getFileAccess({
+      filePath: submission.file_url,
+      expiresInSeconds: 300,
+    });
+
+    if (access.type === 'signed_url') {
+      if (req.query.format === 'json') {
+        return res.status(200).json({
+          success: true,
+          download_url: access.url,
+          expires_in: access.expiresIn,
+        });
+      }
+      return res.redirect(access.url);
+    } else if (access.type === 'local_file') {
+      if (req.query.format === 'json') {
+        // Return relative stream endpoint with token
+        return res.status(200).json({
+          success: true,
+          download_url: `/api/submissions/${id}/file?download=true`,
+          storage_mode: 'local_secure',
+        });
+      }
+      return res.sendFile(access.absolutePath);
+    } else {
+      return res.redirect(access.url || submission.file_url);
+    }
   } catch (error) {
     next(error);
   }

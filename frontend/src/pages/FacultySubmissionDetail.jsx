@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getFacultySubmissionById, gradeSubmission } from '../services/api';
+import { getFacultySubmissionById, gradeSubmission, downloadSubmissionFile } from '../services/api';
 
 export default function FacultySubmissionDetail() {
   const { id } = useParams();
@@ -175,14 +175,23 @@ export default function FacultySubmissionDetail() {
                 </div>
                 <div className="artifact-download-card mt-2">
                   <span className="label">Artifact Storage Reference:</span>
-                  <a
-                    href={submission.file_url}
-                    target="_blank"
-                    rel="noreferrer"
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0' }}>
+                    {submission.file_url}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadSubmissionFile(
+                        token,
+                        submission.id,
+                        `${submission.student_name || 'student'}_solution`
+                      )
+                    }
                     className="btn-download-artifact"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
                   >
-                    🔗 Inspect / Download Student Solution ({submission.file_url.split('/').pop()})
-                  </a>
+                    🔒 Inspect / Download Student Solution ({submission.file_url.split('/').pop()})
+                  </button>
                 </div>
               </div>
             </div>

@@ -127,6 +127,61 @@ export async function submitAssignment(token, { assignmentId, file, fileUrl }) {
   return handleResponse(response);
 }
 
+/**
+ * Request secure access metadata or signed URL for a submission file
+ */
+export async function getSubmissionFileMetadata(token, submissionId) {
+  const response = await fetch(
+    `${API_BASE_URL}/submissions/${submissionId}/file?format=json`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return handleResponse(response);
+}
+
+/**
+ * Securely download or open an authorized submission artifact
+ * Automatically checks whether to use a temporary signed URL or an authenticated stream
+ */
+export async function downloadSubmissionFile(token, submissionId, filename = 'assignment_solution') {
+  try {
+    const meta = await getSubmissionFileMetadata(token, submissionId);
+    if (meta.download_url && (meta.download_url.startsWith('http://') || meta.download_url.startsWith('https://'))) {
+      window.open(meta.download_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+  } catch (err) {
+    // If format=json not supported or failed, continue to direct stream
+  }
+
+  const response = await fetch(`${API_BASE_URL}/submissions/${submissionId}/file`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.message || 'Access denied or file not found.');
+  }
+
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const tempLink = document.createElement('a');
+  tempLink.href = blobUrl;
+  tempLink.download = filename;
+  document.body.appendChild(tempLink);
+  tempLink.click();
+  document.body.removeChild(tempLink);
+  setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+}
+
 // -----------------------------------------------------------------------------
 // Faculty Specific Endpoints
 // -----------------------------------------------------------------------------

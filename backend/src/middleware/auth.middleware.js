@@ -14,9 +14,16 @@ import { AuditModel } from '../models/audit.model.js';
  */
 export const requireAuth = async (req, res, next) => {
   try {
+    let token = null;
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1].trim();
+    } else if (req.query && req.query.token) {
+      token = req.query.token.trim();
+    }
+
+    if (!token) {
       await AuditModel.logAccess({
         userId: null,
         endpoint: req.originalUrl,
@@ -30,8 +37,6 @@ export const requireAuth = async (req, res, next) => {
         message: 'Authentication required. No token provided.',
       });
     }
-
-    const token = authHeader.split(' ')[1].trim();
 
     let decoded;
     try {

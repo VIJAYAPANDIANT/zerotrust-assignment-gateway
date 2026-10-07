@@ -9,6 +9,9 @@ export const config = {
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   jwtSecret: process.env.JWT_SECRET || 'zerotrust_assignment_gateway_fallback_secret',
   databaseUrl: process.env.DATABASE_URL || '',
+  supabaseUrl: process.env.SUPABASE_URL || '',
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  supabaseBucket: process.env.SUPABASE_STORAGE_BUCKET || 'assignments',
 };
 
 // Validate critical security secrets

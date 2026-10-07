@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getMySubmissions } from '../services/api';
+import { getMySubmissions, downloadSubmissionFile } from '../services/api';
 
 export default function StudentSubmissions() {
   const { token } = useAuth();
@@ -97,14 +97,19 @@ export default function StudentSubmissions() {
                   {/* File Artifact Row */}
                   <div className="detail-row">
                     <span className="label">Submitted Artifact:</span>
-                    <a
-                      href={sub.file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="file-link"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadSubmissionFile(
+                          token,
+                          sub.id,
+                          `${sub.assignment_title || 'assignment'}_solution`
+                        )
+                      }
+                      className="btn-secure-download"
                     >
-                      🔗 {sub.file_url.split('/').pop() || 'View Solution Artifact'}
-                    </a>
+                      🔒 Download Solution Artifact
+                    </button>
                   </div>
 
                   {/* Marks / Grading */}

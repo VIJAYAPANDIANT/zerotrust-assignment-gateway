@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getAssignments, submitAssignment } from '../services/api';
+import { getAssignments, submitAssignment, downloadSubmissionFile } from '../services/api';
 
 export default function StudentAssignments() {
   const { token } = useAuth();
@@ -197,14 +197,13 @@ export default function StudentAssignments() {
                     )}
                     <div className="artifact-link-row">
                       <span className="meta-label">Submitted Artifact:</span>
-                      <a
-                        href={sub.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="file-link"
+                      <button
+                        type="button"
+                        onClick={() => downloadSubmissionFile(token, sub.id, `${assignment.title}_solution`)}
+                        className="btn-secure-download"
                       >
-                        🔗 View File Artifact
-                      </a>
+                        🔒 Download Solution File
+                      </button>
                     </div>
                   </div>
                 )}
@@ -237,7 +236,7 @@ export default function StudentAssignments() {
 
             <form onSubmit={handleSubmitAssignment} className="modal-body">
               <p className="modal-info">
-                Please upload your coursework file (PDF, DOCX, ZIP, or Code) or supply an accessible artifact URL.
+                Please upload your solution file (<strong>PDF, DOC, DOCX</strong> - Max 15MB) to Supabase Storage.
               </p>
 
               {submitFeedback && (
@@ -247,10 +246,11 @@ export default function StudentAssignments() {
               )}
 
               <div className="form-group">
-                <label htmlFor="file-upload">Choose Solution File (Max 25MB)</label>
+                <label htmlFor="file-upload">Choose Solution File (PDF, DOC, DOCX - Max 15MB)</label>
                 <input
                   id="file-upload"
                   type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => setSelectedFile(e.target.files[0])}
                   disabled={submitting}
                 />

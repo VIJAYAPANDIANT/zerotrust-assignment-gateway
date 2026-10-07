@@ -24,6 +24,18 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Handle Multer upload errors
+  if (err.name === 'MulterError') {
+    const msg =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'File size exceeds maximum allowed limit (15 MB).'
+        : `File upload error: ${err.message}`;
+    return res.status(400).json({
+      success: false,
+      message: msg,
+    });
+  }
+
   const statusCode = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 

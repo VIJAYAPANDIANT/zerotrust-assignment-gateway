@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getMySubmissions,
   submitAssignment,
+  getSubmissionFile,
 } from '../controllers/submission.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { requireStudent } from '../middleware/role.middleware.js';
@@ -18,5 +19,8 @@ router.post(
   upload.single('file'),
   submitAssignment
 );
+
+// Secure file retrieval route (Accessible to submitting student and grading faculty)
+router.get('/:id/file', requireAuth, getSubmissionFile);
 
 export default router;

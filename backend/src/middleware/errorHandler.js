@@ -14,19 +14,19 @@ export const notFoundHandler = (req, res, next) => {
 
 /**
  * Centralized Error-Handling Middleware
- * Catches operational and unhandled errors throughout the application.
+ * Catches operational, validation, CORS, and unhandled errors throughout the application.
  */
 export const errorHandler = (err, req, res, next) => {
-  // Handle JSON parse errors from express.json()
+  // 1. Handle JSON parse errors from express.json()
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({
       success: false,
       error: 'Bad Request',
-      message: 'Malformed JSON payload provided',
+      message: 'Malformed JSON payload provided.',
     });
   }
 
-  // Handle Multer upload errors
+  // 2. Handle Multer file upload errors
   if (err.name === 'MulterError') {
     const msg =
       err.code === 'LIMIT_FILE_SIZE'
@@ -39,6 +39,15 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // 3. Handle CORS origin rejection
+  if (err.message && err.message.includes('CORS policy')) {
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden',
+      message: err.message,
+    });
+  }
+
   const statusCode = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
@@ -48,16 +57,27 @@ export const errorHandler = (err, req, res, next) => {
     403: 'Forbidden',
     404: 'Not Found',
     409: 'Conflict',
+    429: 'Too Many Requests',
     500: 'Internal Server Error',
   };
 
-  // Log error details for developer diagnostics
-  console.error(`[Error] ${statusCode} - ${message}`);
+  // Secure logging on origin server
+  if (statusCode >= 500) {
+    console.error(`[Server Error ${statusCode}]`, err);
+  } else {
+    console.warn(`[Client Error ${statusCode}] ${message} (${req.method} ${req.originalUrl})`);
+  }
 
-  res.status(statusCode).json({
+  // In production, mask internal error details from external callers
+  const clientMessage =
+    config.nodeEnv === 'production' && statusCode === 500
+      ? 'An internal server error occurred. Please contact the administrator.'
+      : message;
+
+  return res.status(statusCode).json({
     success: false,
     error: err.error || errorNames[statusCode] || 'Error',
-    message,
+    message: clientMessage,
     ...(config.nodeEnv === 'development' && { stack: err.stack }),
   });
 };

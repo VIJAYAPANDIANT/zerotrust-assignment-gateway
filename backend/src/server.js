@@ -29,25 +29,45 @@ app.use(errorHandler);
 
 // 7. Clean Server Startup Process
 const server = app.listen(config.port, () => {
+  const healthDisplay =
+    config.nodeEnv === 'production'
+      ? `Port: ${config.port} (/api/health)`
+      : `http://localhost:${config.port}/api/health`;
+
   console.log('====================================================');
   console.log(' ZeroTrust Assignment Gateway API');
   console.log(` Status: Running`);
   console.log(` Port: ${config.port}`);
   console.log(` Environment: ${config.nodeEnv}`);
-  console.log(` Health Check: http://localhost:${config.port}/api/health`);
+  console.log(` Health Check: ${healthDisplay}`);
   console.log('====================================================');
 });
 
-// Handle graceful shutdown
+// 8. Graceful Shutdown & Unhandled Process Rejection Handlers
 const shutdown = (signal) => {
   console.log(`\nReceived ${signal}. Shutting down server gracefully...`);
   server.close(() => {
-    console.log('Server process terminated.');
+    console.log('Server process terminated cleanly.');
     process.exit(0);
   });
+
+  // Force close after 10s timeout
+  setTimeout(() => {
+    console.error('Could not close connections in time, forcefully shutting down.');
+    process.exit(1);
+  }, 10000);
 };
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Unhandled Rejection] at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]:', err);
+  shutdown('UNCAUGHT_EXCEPTION');
+});
 
 export default app;

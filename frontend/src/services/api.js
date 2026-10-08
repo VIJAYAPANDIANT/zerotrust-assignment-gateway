@@ -1,4 +1,13 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+/**
+ * API Base URL Configuration
+ * Reads from Vite environment variable in production or local environments.
+ * - VITE_API_BASE_URL or VITE_API_URL can specify absolute backend endpoint (e.g., https://api.gateway.edu/api)
+ * - Fallbacks: In development defaults to http://localhost:5000/api; in production defaults to relative '/api'
+ */
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
 
 /**
  * Handle HTTP response and JSON parsing

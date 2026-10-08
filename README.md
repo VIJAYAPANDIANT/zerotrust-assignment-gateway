@@ -414,18 +414,26 @@ A centralized, responsive UI is provided to inspect real-time application securi
    ```bash
    npm install
    ```
-3. Configure environment variables in `backend/.env`:
+3. Configure environment variables (copy from template):
+   ```bash
+   cp .env.example .env
+   ```
+   Configure `backend/.env`:
    ```env
    PORT=5000
    NODE_ENV=development
    CLIENT_URL=http://localhost:5173
+   ALLOWED_ORIGINS=http://localhost:5173
    JWT_SECRET=your_jwt_secret_key_here
    DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres
+   SUPABASE_URL=https://[YOUR-PROJECT-REF].supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+   SUPABASE_STORAGE_BUCKET=assignments
    ```
 4. Start the Express server:
    ```bash
    npm run dev
-   # or
+   # or for production
    npm start
    ```
 5. Verify the health endpoint at `http://localhost:5000/api/health`.
@@ -439,8 +447,85 @@ A centralized, responsive UI is provided to inspect real-time application securi
    ```bash
    npm install
    ```
-3. Start the Vite development server:
+3. Configure environment variables (copy from template):
+   ```bash
+   cp .env.example .env
+   ```
+   Configure `frontend/.env`:
+   ```env
+   VITE_API_BASE_URL=http://localhost:5000/api
+   ```
+4. Start the Vite development server:
    ```bash
    npm run dev
    ```
-4. Open the development URL in your browser (`http://localhost:5173`).
+5. Open the development URL in your browser (`http://localhost:5173`).
+
+---
+
+## 13. Production Deployment Guide & Specifications
+
+The gateway is built for production deployment across separated cloud infrastructure (or unified reverse proxies) with Zero Trust defense-in-depth principles.
+
+### 1. Environment Variables Matrix
+
+| Component | Variable | Required in Prod | Description / Example |
+| :--- | :--- | :---: | :--- |
+| **Frontend** | `VITE_API_BASE_URL` | Optional | Target API endpoint (e.g. `https://api.gateway.edu/api`). Defaults to `/api` if deployed behind a unified reverse proxy. |
+| **Backend** | `NODE_ENV` | **Yes** | Set to `production` (masks internal stack traces and server errors). |
+| **Backend** | `PORT` | **Yes** | Port for Express listener (default: `5000` or assigned by PaaS container). |
+| **Backend** | `CLIENT_URL` | **Yes** | Primary frontend domain for CORS headers (e.g. `https://gateway.edu`). |
+| **Backend** | `ALLOWED_ORIGINS` | Optional | Comma-separated list of authorized client origins for multi-domain deployments. |
+| **Backend** | `JWT_SECRET` | **Yes** | High-entropy secret key (min 32 chars) for cryptographic token signing. Required in `production`. |
+| **Backend** | `DATABASE_URL` | Optional | PostgreSQL URI for Supabase connection pool. (Falls back to in-memory store in dev). |
+| **Backend** | `SUPABASE_URL` | Optional | Supabase Project URL (`https://[PROJECT-REF].supabase.co`). |
+| **Backend** | `SUPABASE_SERVICE_ROLE_KEY` | Optional | Service role API key for authenticated server storage operations. |
+| **Backend** | `SUPABASE_STORAGE_BUCKET` | Optional | Private storage bucket name (default: `assignments`). |
+
+> [!CAUTION]
+> **Zero-Secrets Policy:** Real `.env` files are strictly excluded by `.gitignore` across all subdirectories and must **never** be committed to version control. Always provide configuration via container environment variables or CI/CD secrets management.
+
+### 2. Production Build & Execution
+
+#### Frontend (Static Hosting / CDN)
+```bash
+cd frontend
+npm install
+npm run build
+```
+- Outputs optimized, minified bundle to `frontend/dist/`.
+- Ready for deployment on static hosting platforms (Cloudflare Pages, Vercel, Netlify, AWS S3/CloudFront).
+- Test production build locally using `npm run preview`.
+
+#### Backend (Container / Node.js Runtime)
+```bash
+cd backend
+npm install --omit=dev
+npm start
+```
+- Executes `node src/server.js`.
+- Automatically activates:
+  - Strict production CORS validation (unauthorized origins blocked with HTTP 403).
+  - Centralized error masking (500 internal errors masked to prevent leaking database details).
+  - Signal listeners for graceful termination (`SIGTERM`, `SIGINT`) with connection drain timeouts.
+  - Runtime exception handlers (`unhandledRejection`, `uncaughtException`).
+
+### 3. Health & Readiness Monitoring Probe
+
+The backend exposes a lightweight, unauthenticated health endpoint for load balancers and orchestrators:
+
+```http
+GET /api/health
+```
+
+**Production Response (HTTP 200 OK):**
+```json
+{
+  "success": true,
+  "message": "ZeroTrust Assignment Gateway API is running",
+  "environment": "production",
+  "uptime": 14208,
+  "timestamp": "2026-10-08T06:15:00.000Z"
+}
+```
+

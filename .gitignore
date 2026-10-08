@@ -32,11 +32,11 @@ backend/storage/*
 
 # Environment variables & secrets
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+*.env
+!.env.example
 *.pem
+*.key
 
 # Editor & OS files
 .vscode/*

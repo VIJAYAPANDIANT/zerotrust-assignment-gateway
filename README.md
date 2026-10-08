@@ -48,9 +48,27 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 
 ---
 
-## 3. Planned Zero Trust Architecture
+## 3. Zero Trust End-to-End Architecture
+
+### Simple Architecture Flow
 
 ```
+User
+  ↓
+Cloudflare Access
+  ↓
+Access Policy
+  ↓
+Cloudflare Tunnel
+  ↓
+Node.js
+  ↓
+Application RBAC
+  ↓
+Supabase
+```
+
+### Detailed Component Diagram
                   ┌─────────────────────────────────────┐
                   │          End User Client            │
                   │   (Student / Faculty Browser)       │

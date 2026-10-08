@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  FolderSimple,
+  PlusCircle,
+  CalendarBlank,
+  UsersThree,
+  CheckCircle,
+  X,
+  CircleNotch,
+  ArrowRight,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getFacultyAssignments, createAssignment } from '../services/api';
 
@@ -38,7 +48,6 @@ export default function FacultyAssignments() {
   const handleOpenModal = () => {
     setTitle('');
     setDescription('');
-    // Default deadline to 14 days from now
     const defaultDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     setDeadline(defaultDate.toISOString().slice(0, 16));
     setModalFeedback(null);
@@ -95,14 +104,18 @@ export default function FacultyAssignments() {
       {/* Header */}
       <div className="section-header">
         <div>
-          <h2>Coursework Assignments Management 📝</h2>
+          <h2>
+            <FolderSimple size={28} weight="duotone" color="#fbbf24" />
+            <span>Coursework Management</span>
+          </h2>
           <p className="welcome-sub">
-            Author coursework prompts, set submission cutoffs, and monitor student completion.
+            Author assignments, set deadlines, and monitor submissions across your course roster.
           </p>
         </div>
-        <div className="header-actions">
-          <button onClick={handleOpenModal} className="btn-primary">
-            ➕ Create New Assignment
+        <div>
+          <button onClick={handleOpenModal} className="btn-primary" style={{ margin: 0 }}>
+            <PlusCircle size={16} weight="bold" />
+            <span>Create Assignment</span>
           </button>
         </div>
       </div>
@@ -111,18 +124,19 @@ export default function FacultyAssignments() {
 
       {loading ? (
         <div className="loading-card">
-          <div className="spinner"></div>
+          <CircleNotch size={32} className="animate-spin" color="#38bdf8" />
           <p>Loading course assignments...</p>
         </div>
       ) : assignments.length === 0 ? (
         <div className="card empty-state-box">
-          <span className="empty-icon" aria-hidden="true">📝</span>
+          <FolderSimple size={44} weight="duotone" className="empty-icon" color="#fbbf24" />
           <p className="empty-title">No Coursework Authored Yet</p>
           <p className="empty-subtitle">
-            You haven't authored any assignments yet. Create your first coursework prompt for students.
+            Create your first assignment prompt for students.
           </p>
-          <button onClick={handleOpenModal} className="btn-primary mt-4">
-            ➕ Create Your First Assignment
+          <button onClick={handleOpenModal} className="btn-primary mt-4" style={{ width: 'auto' }}>
+            <PlusCircle size={16} weight="bold" />
+            <span>Create Assignment</span>
           </button>
         </div>
       ) : (
@@ -133,7 +147,8 @@ export default function FacultyAssignments() {
                 <div>
                   <h3 className="assignment-title">{assignment.title}</h3>
                   <span className="mini-deadline">
-                    📅 Due: {new Date(assignment.deadline).toLocaleString(undefined, {
+                    <CalendarBlank size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                    Due: {new Date(assignment.deadline).toLocaleString(undefined, {
                       dateStyle: 'medium',
                       timeStyle: 'short',
                     })}
@@ -142,10 +157,12 @@ export default function FacultyAssignments() {
 
                 <div className="status-tags-group">
                   <span className="status-pill status-submitted-pill">
-                    {assignment.total_submissions || 0} Submissions
+                    <UsersThree size={14} />
+                    <span>{assignment.total_submissions || 0} Submissions</span>
                   </span>
                   <span className="status-pill status-verified-faculty">
-                    {assignment.graded_submissions || 0} Graded
+                    <CheckCircle size={14} />
+                    <span>{assignment.graded_submissions || 0} Graded</span>
                   </span>
                 </div>
               </div>
@@ -155,9 +172,10 @@ export default function FacultyAssignments() {
               <div className="assignment-footer-actions">
                 <Link
                   to="/faculty/submissions"
-                  className="btn-action secondary text-sm"
+                  className="btn-action primary"
                 >
-                  Review Student Submissions →
+                  <span>Review Submissions Queue</span>
+                  <ArrowRight size={14} weight="bold" />
                 </Link>
               </div>
             </div>
@@ -170,9 +188,9 @@ export default function FacultyAssignments() {
         <div className="modal-backdrop">
           <div className="modal-window">
             <div className="modal-header">
-              <h3>Create New Coursework Assignment</h3>
+              <h3>Create Coursework Assignment</h3>
               <button onClick={handleCloseModal} className="btn-close-modal">
-                ✕
+                <X size={18} />
               </button>
             </div>
 
@@ -184,12 +202,15 @@ export default function FacultyAssignments() {
               )}
 
               <div className="form-group">
-                <label htmlFor="assign-title">Assignment Title *</label>
+                <label className="form-label" htmlFor="assign-title">
+                  <span>Assignment Title *</span>
+                </label>
                 <input
                   id="assign-title"
                   type="text"
+                  className="form-input"
                   required
-                  placeholder="e.g., Lab 5: Cloudflare Tunnel & JWT Assertion Validation"
+                  placeholder="e.g. Lab 4: Zero Trust Access Token Verification"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   disabled={submitting}
@@ -197,11 +218,14 @@ export default function FacultyAssignments() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="assign-desc">Prompt & Instructions</label>
+                <label className="form-label" htmlFor="assign-desc">
+                  <span>Prompt & Instructions</span>
+                </label>
                 <textarea
                   id="assign-desc"
                   rows={4}
-                  placeholder="Detail the submission requirements, rubric guidelines, and deliverables..."
+                  className="form-input"
+                  placeholder="Provide assignment parameters, evaluation rubric, submission format specifications..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={submitting}
@@ -209,10 +233,13 @@ export default function FacultyAssignments() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="assign-deadline">Submission Deadline *</label>
+                <label className="form-label" htmlFor="assign-deadline">
+                  <span>Submission Cutoff / Deadline *</span>
+                </label>
                 <input
                   id="assign-deadline"
                   type="datetime-local"
+                  className="form-input"
                   required
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
@@ -232,9 +259,10 @@ export default function FacultyAssignments() {
                 <button
                   type="submit"
                   className="btn-primary"
+                  style={{ width: 'auto', margin: 0 }}
                   disabled={submitting}
                 >
-                  {submitting ? 'Publishing...' : 'Publish Assignment'}
+                  {submitting ? 'Publishing Coursework...' : 'Publish Assignment'}
                 </button>
               </div>
             </form>

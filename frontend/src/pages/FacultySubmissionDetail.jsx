@@ -1,5 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import {
+  FileText,
+  User,
+  CalendarBlank,
+  DownloadSimple,
+  ArrowsClockwise,
+  ArrowLeft,
+  CheckCircle,
+  WarningCircle,
+  FloppyDisk,
+  CircleNotch,
+  Sparkle,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getFacultySubmissionById, gradeSubmission, downloadSubmissionFile } from '../services/api';
 
@@ -16,6 +29,7 @@ export default function FacultySubmissionDetail() {
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
   const [gradingMessage, setGradingMessage] = useState(null);
+  const [downloading, setDownloading] = useState(false);
 
   const fetchDetail = async () => {
     if (!token || !id) return;
@@ -90,18 +104,39 @@ export default function FacultySubmissionDetail() {
     }
   };
 
+  const handleDownload = async () => {
+    if (!submission) return;
+    setDownloading(true);
+    try {
+      await downloadSubmissionFile(
+        token,
+        submission.id,
+        `${submission.student_name || 'student'}_solution`
+      );
+    } catch (err) {
+      alert(`Download Error: ${err.message}`);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="dashboard-container">
       {/* Header with breadcrumb */}
       <div className="section-header">
         <div>
           <Link to="/faculty/submissions" className="breadcrumb-link">
-            ← Back to Submissions
+            <ArrowLeft size={14} weight="bold" />
+            <span>Back to Submissions Queue</span>
           </Link>
-          <h2>Submission Evaluation 🔍</h2>
+          <h2>
+            <FileText size={28} weight="duotone" color="#fbbf24" />
+            <span>Submission Evaluation Inspector</span>
+          </h2>
         </div>
         <button onClick={fetchDetail} className="btn-refresh">
-          🔄 Refresh
+          <ArrowsClockwise size={16} weight="bold" />
+          <span>Refresh Record</span>
         </button>
       </div>
 
@@ -109,26 +144,28 @@ export default function FacultySubmissionDetail() {
 
       {loading ? (
         <div className="loading-card">
-          <div className="spinner"></div>
+          <CircleNotch size={32} className="animate-spin" color="#38bdf8" />
           <p>Loading submission details...</p>
         </div>
       ) : !submission ? (
         <div className="card empty-state-box">
-          <span className="empty-icon" aria-hidden="true">⚠️</span>
           <p className="empty-title">Submission Not Found</p>
           <p className="empty-subtitle">The requested submission record does not exist or has been removed.</p>
-          <Link to="/faculty/submissions" className="btn-primary mt-4">
-            ← Return to Submissions List
+          <Link to="/faculty/submissions" className="btn-primary mt-4" style={{ width: 'auto' }}>
+            Return to Submissions List
           </Link>
         </div>
       ) : (
         <div className="grid-cards">
           {/* Left Column: Assignment & Submission Details */}
-          <div className="detail-column">
+          <div className="detail-column" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Assignment Details */}
             <div className="card">
               <div className="card-header">
-                <h3>📖 Assignment Prompt Details</h3>
+                <h3>
+                  <FileText size={18} weight="duotone" color="#38bdf8" />
+                  <span>Coursework Prompt</span>
+                </h3>
               </div>
               <div className="card-body">
                 <div className="detail-row">
@@ -137,14 +174,16 @@ export default function FacultySubmissionDetail() {
                 </div>
                 <div className="detail-row">
                   <span className="label">Deadline:</span>
-                  <span className="value">
+                  <span className="value font-mono" style={{ fontSize: '0.82rem' }}>
                     {submission.assignment_deadline
                       ? new Date(submission.assignment_deadline).toLocaleString()
                       : 'No deadline set'}
                   </span>
                 </div>
-                <div className="prompt-box mt-2">
-                  <span className="label">Prompt & Rubric:</span>
+                <div className="prompt-box">
+                  <span className="label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Instructions & Rubric
+                  </span>
                   <p className="prompt-text">
                     {submission.assignment_description || 'No prompt description provided.'}
                   </p>
@@ -153,9 +192,12 @@ export default function FacultySubmissionDetail() {
             </div>
 
             {/* Submission Metadata */}
-            <div className="card mt-4">
+            <div className="card">
               <div className="card-header">
-                <h3>👤 Student Submission Artifact</h3>
+                <h3>
+                  <User size={18} weight="duotone" color="#38bdf8" />
+                  <span>Student Submission Artifact</span>
+                </h3>
               </div>
               <div className="card-body">
                 <div className="detail-row">
@@ -164,38 +206,40 @@ export default function FacultySubmissionDetail() {
                 </div>
                 <div className="detail-row">
                   <span className="label">Student Email:</span>
-                  <span className="value">{submission.student_email}</span>
+                  <span className="value font-mono" style={{ fontSize: '0.82rem' }}>{submission.student_email}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="label">Submitted Timestamp:</span>
-                  <span className="value">
+                  <span className="label">Submitted:</span>
+                  <span className="value font-mono" style={{ fontSize: '0.82rem' }}>
                     {new Date(submission.submitted_at).toLocaleString()}
                   </span>
                 </div>
                 <div className="detail-row">
-                  <span className="label">Status:</span>
+                  <span className="label">Current Status:</span>
                   <span className={`status-pill status-${submission.status}`}>
                     {submission.status.toUpperCase()}
                   </span>
                 </div>
-                <div className="artifact-download-card mt-2">
-                  <span className="label">Artifact Storage Reference:</span>
-                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0' }}>
+
+                <div className="artifact-download-card">
+                  <span className="label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Vault Storage Path
+                  </span>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', margin: '6px 0 10px' }}>
                     {submission.file_url}
                   </p>
                   <button
                     type="button"
-                    onClick={() =>
-                      downloadSubmissionFile(
-                        token,
-                        submission.id,
-                        `${submission.student_name || 'student'}_solution`
-                      )
-                    }
-                    className="btn-download-artifact"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+                    onClick={handleDownload}
+                    className="btn-action primary"
+                    disabled={downloading}
                   >
-                    🔒 Inspect / Download Student Solution ({submission.file_url.split('/').pop()})
+                    {downloading ? (
+                      <CircleNotch size={15} className="animate-spin" />
+                    ) : (
+                      <DownloadSimple size={15} weight="bold" />
+                    )}
+                    <span>Download & Inspect Solution File</span>
                   </button>
                 </div>
               </div>
@@ -206,18 +250,31 @@ export default function FacultySubmissionDetail() {
           <div className="grading-column">
             <div className="card">
               <div className="card-header">
-                <h3>📝 Evaluation & Grading</h3>
+                <h3>
+                  <Sparkle size={18} weight="duotone" color="#fbbf24" />
+                  <span>Evaluation & Feedback</span>
+                </h3>
               </div>
-              <form onSubmit={handleGradeSubmit} className="card-body">
+              <form onSubmit={handleGradeSubmit} className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {gradingMessage && (
                   <div className={`alert-banner ${gradingMessage.type}`}>
-                    {gradingMessage.text}
+                    {gradingMessage.type === 'success' ? (
+                      <CheckCircle size={18} weight="duotone" />
+                    ) : (
+                      <WarningCircle size={18} weight="duotone" />
+                    )}
+                    <span>{gradingMessage.text}</span>
                   </div>
                 )}
 
                 <div className="form-group">
-                  <label htmlFor="grade-marks">
-                    Score / Marks (out of 100) *
+                  <label className="form-label" htmlFor="grade-marks">
+                    <span>Score (out of 100) *</span>
+                    {marks && (
+                      <span style={{ color: '#34d399', fontFamily: 'var(--font-mono)' }}>
+                        Grade: {marks >= 90 ? 'A' : marks >= 80 ? 'B' : marks >= 70 ? 'C' : 'Pass'}
+                      </span>
+                    )}
                   </label>
                   <input
                     id="grade-marks"
@@ -226,24 +283,37 @@ export default function FacultySubmissionDetail() {
                     min="0"
                     max="100"
                     required
-                    placeholder="e.g., 95"
+                    placeholder="e.g. 95"
+                    className="form-input font-mono"
                     value={marks}
                     onChange={(e) => setMarks(e.target.value)}
                     disabled={saving}
                   />
-                  <span className="field-hint">
-                    Numerical grade reflected on student dashboard.
-                  </span>
+
+                  {/* Quick Preset Score Buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    {[100, 95, 90, 85, 80, 75].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        className="btn-action"
+                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}
+                        onClick={() => setMarks(score)}
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="grade-feedback">
-                    Instructor Remarks & Feedback
+                  <label className="form-label" htmlFor="grade-feedback">
+                    <span>Instructor Commentary & Rubric Remarks</span>
                   </label>
                   <textarea
                     id="grade-feedback"
                     rows={6}
-                    placeholder="Provide constructive assessment, rubric breakdown, and commentary on the student's solution..."
+                    placeholder="Provide constructive assessment, rubric breakdown, and commentary..."
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     disabled={saving}
@@ -253,10 +323,20 @@ export default function FacultySubmissionDetail() {
                 <div className="grading-action-bar">
                   <button
                     type="submit"
-                    className="btn-primary w-full"
+                    className="btn-primary"
                     disabled={saving}
                   >
-                    {saving ? 'Recording Evaluation...' : '💾 Save Grade & Publish Feedback'}
+                    {saving ? (
+                      <>
+                        <CircleNotch size={16} className="animate-spin" />
+                        <span>Recording Evaluation...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FloppyDisk size={16} weight="bold" />
+                        <span>Save Grade & Publish Feedback</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

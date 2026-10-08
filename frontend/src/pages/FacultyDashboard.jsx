@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ChalkboardTeacher,
+  FolderSimple,
+  UploadSimple,
+  Hourglass,
+  CheckCircle,
+  PlusCircle,
+  ShieldCheck,
+  ArrowRight,
+  CircleNotch,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getFacultyAssignments, getFacultySubmissions } from '../services/api';
 
@@ -49,53 +60,61 @@ export default function FacultyDashboard() {
   return (
     <div className="dashboard-container">
       {/* Welcome Banner */}
-      <div className="welcome-banner faculty-banner">
+      <div className="welcome-banner">
         <div>
-          <h2>Instructor Dashboard 🏛️</h2>
+          <h2>
+            <ChalkboardTeacher size={28} weight="duotone" color="#fbbf24" />
+            <span>Faculty Command Portal • {user?.name}</span>
+          </h2>
           <p className="welcome-sub">
-            Welcome, {user?.name} • Course Management & Evaluation Portal
+            Coursework Governance & Student Evaluation • Zero Trust Enforced
           </p>
         </div>
-        <div className="status-pill status-verified-faculty">
-          <span className="dot"></span> Evaluator Identity Verified
+        <div className="perimeter-badge" style={{ color: '#fbbf24', borderColor: 'rgba(251, 191, 36, 0.3)', background: 'rgba(251, 191, 36, 0.08)' }}>
+          <span className="pulse-dot" style={{ backgroundColor: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>
+          <span>Faculty Role Verified</span>
         </div>
       </div>
 
       {/* KPI Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
-          <span className="stat-icon">📝</span>
+          <div className="stat-icon-wrapper" style={{ color: '#fbbf24', background: 'rgba(251, 191, 36, 0.08)', borderColor: 'rgba(251, 191, 36, 0.2)' }}>
+            <FolderSimple size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value">{loading ? '...' : stats.totalAssignments}</span>
-            <span className="stat-label">Active Assignments</span>
+            <span className="stat-value">{loading ? '—' : stats.totalAssignments}</span>
+            <span className="stat-label">Active Coursework</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">📥</span>
+          <div className="stat-icon-wrapper">
+            <UploadSimple size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value">{loading ? '...' : stats.totalSubmissions}</span>
-            <span className="stat-label">Student Submissions</span>
+            <span className="stat-value">{loading ? '—' : stats.totalSubmissions}</span>
+            <span className="stat-label">Total Student Submissions</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">⏳</span>
+          <div className="stat-icon-wrapper failure">
+            <Hourglass size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value text-orange">
-              {loading ? '...' : stats.pendingGrading}
-            </span>
+            <span className="stat-value text-orange">{loading ? '—' : stats.pendingGrading}</span>
             <span className="stat-label">Pending Evaluation</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">✅</span>
+          <div className="stat-icon-wrapper allow">
+            <CheckCircle size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value text-green">
-              {loading ? '...' : stats.gradedCount}
-            </span>
-            <span className="stat-label">Graded & Evaluated</span>
+            <span className="stat-value text-green">{loading ? '—' : stats.gradedCount}</span>
+            <span className="stat-label">Graded & Recorded</span>
           </div>
         </div>
       </div>
@@ -104,18 +123,23 @@ export default function FacultyDashboard() {
       <div className="grid-cards">
         <div className="card">
           <div className="card-header">
-            <h3>⚡ Evaluator Quick Actions</h3>
+            <h3>
+              <PlusCircle size={20} weight="duotone" color="#38bdf8" />
+              <span>Evaluator Fast Actions</span>
+            </h3>
           </div>
-          <div className="card-body">
-            <p className="card-description">
-              Create new assignment prompts with custom deadlines or review student artifacts awaiting your evaluation.
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Author coursework prompts, set cutoffs, or inspect student artifacts awaiting marks and rubric feedback.
             </p>
-            <div className="action-buttons-group">
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <Link to="/faculty/assignments" className="btn-action primary">
-                ➕ Publish New Coursework Assignment
+                <PlusCircle size={16} weight="bold" />
+                <span>Author Coursework Assignment</span>
               </Link>
-              <Link to="/faculty/submissions" className="btn-action secondary">
-                📋 Review All Student Submissions
+              <Link to="/faculty/submissions" className="btn-action">
+                <UploadSimple size={16} weight="bold" />
+                <span>Review Submissions Queue</span>
               </Link>
             </div>
           </div>
@@ -123,103 +147,104 @@ export default function FacultyDashboard() {
 
         <div className="card">
           <div className="card-header">
-            <h3>🛡️ Zero Trust Evaluator Role Boundary</h3>
+            <h3>
+              <ShieldCheck size={20} weight="duotone" color="#fbbf24" />
+              <span>Zero Trust Evaluator Assertion</span>
+            </h3>
           </div>
           <div className="card-body">
             <div className="detail-row">
-              <span className="label">Instructor Identity:</span>
-              <span className="value">{user?.email}</span>
+              <span className="label">Evaluator Identity:</span>
+              <span className="value font-mono" style={{ fontSize: '0.82rem' }}>{user?.email}</span>
             </div>
             <div className="detail-row">
               <span className="label">Gateway Tier:</span>
-              <span className="value badge-faculty">{user?.role}</span>
+              <span className="role-badge role-faculty">FACULTY</span>
             </div>
             <div className="detail-row">
-              <span className="label">Evaluation Authority:</span>
-              <span className="value text-green">Authorized for Grading</span>
-            </div>
-            <div className="detail-row">
-              <span className="label">Admin Boundary:</span>
-              <span className="value">Separated from System Admin</span>
+              <span className="label">Evaluation Scope:</span>
+              <span className="value text-green" style={{ fontWeight: 600, fontSize: '0.82rem' }}>Authorized for Grading</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Submissions Snapshot */}
-      <div className="card mt-4">
-        <div className="card-header flex-between">
-          <h3>📥 Recent Coursework Submissions</h3>
-          <Link to="/faculty/submissions" className="link-button">
-            View All ({stats.totalSubmissions}) →
+      {/* Recent Submissions Queue */}
+      <div className="card">
+        <div className="card-header">
+          <h3>
+            <UploadSimple size={20} weight="duotone" color="#38bdf8" />
+            <span>Recent Student Submissions</span>
+          </h3>
+          <Link to="/faculty/submissions" className="btn-action">
+            <span>View All Queue</span>
+            <ArrowRight size={14} weight="bold" />
           </Link>
         </div>
-        <div className="card-body">
+
+        <div className="table-responsive">
           {loading ? (
-            <div className="loading-card" style={{ padding: '2.5rem' }}>
-              <div className="spinner"></div>
-              <p>Loading student submissions...</p>
+            <div className="empty-state">
+              <CircleNotch size={28} className="animate-spin" color="#38bdf8" />
+              <p className="empty-state-desc">Loading submissions queue...</p>
             </div>
           ) : recentSubmissions.length === 0 ? (
-            <div className="empty-state-box">
-              <span className="empty-icon" aria-hidden="true">📥</span>
-              <p className="empty-title">No Student Submissions Yet</p>
-              <p className="empty-subtitle">
-                Student coursework submissions will appear here once submitted.
-              </p>
+            <div className="empty-state">
+              <UploadSimple size={36} weight="duotone" className="empty-state-icon" />
+              <h4 className="empty-state-title">No submissions in queue</h4>
+              <p className="empty-state-desc">When students submit solutions, they will appear here for grading.</p>
             </div>
           ) : (
-            <div className="faculty-table-wrapper">
-              <table className="faculty-table">
-                <thead>
-                  <tr>
-                    <th>Student</th>
-                    <th>Assignment</th>
-                    <th>Submitted On</th>
-                    <th>Status</th>
-                    <th>Marks</th>
-                    <th>Action</th>
+            <table className="faculty-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Assignment</th>
+                  <th>Submitted At</th>
+                  <th>Status</th>
+                  <th>Grade</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentSubmissions.map((sub) => (
+                  <tr key={sub.id}>
+                    <td>
+                      <div className="font-bold">{sub.student_name}</div>
+                      <div className="sub-text font-mono">{sub.student_email}</div>
+                    </td>
+                    <td>
+                      <div className="font-medium">{sub.assignment_title}</div>
+                    </td>
+                    <td>
+                      <span className="timestamp" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {new Date(sub.submitted_at).toLocaleDateString()} {new Date(sub.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td>
+                      {sub.marks !== null ? (
+                        <span className="status-pill status-graded">GRADED</span>
+                      ) : (
+                        <span className="status-pill status-pending">PENDING</span>
+                      )}
+                    </td>
+                    <td>
+                      {sub.marks !== null ? (
+                        <span className="badge-grade-done">{sub.marks} / 100</span>
+                      ) : (
+                        <span className="badge-grade-pending">Unchecked</span>
+                      )}
+                    </td>
+                    <td>
+                      <Link to={`/faculty/submissions/${sub.id}`} className="btn-table-action">
+                        <span>Evaluate</span>
+                        <ArrowRight size={13} weight="bold" />
+                      </Link>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {recentSubmissions.map((sub) => (
-                    <tr key={sub.id}>
-                      <td>
-                        <strong>{sub.student_name}</strong>
-                        <div className="sub-text">{sub.student_email}</div>
-                      </td>
-                      <td>{sub.assignment_title}</td>
-                      <td>
-                        {new Date(sub.submitted_at).toLocaleString(undefined, {
-                          dateStyle: 'short',
-                          timeStyle: 'short',
-                        })}
-                      </td>
-                      <td>
-                        <span className={`status-pill status-${sub.status}`}>
-                          {sub.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        {sub.marks !== null ? (
-                          <span className="text-green font-bold">{sub.marks} / 100</span>
-                        ) : (
-                          <span className="text-muted">Unchecked</span>
-                        )}
-                      </td>
-                      <td>
-                        <Link
-                          to={`/faculty/submissions/${sub.id}`}
-                          className="btn-table-action"
-                        >
-                          Review & Grade →
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>

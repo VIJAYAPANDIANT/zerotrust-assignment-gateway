@@ -1,4 +1,17 @@
 import { useState, useEffect } from 'react';
+import {
+  FolderSimple,
+  ArrowsClockwise,
+  CalendarBlank,
+  UploadSimple,
+  CheckCircle,
+  FileText,
+  DownloadSimple,
+  X,
+  CircleNotch,
+  ArrowRight,
+  ShieldCheck,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getAssignments, submitAssignment, downloadSubmissionFile } from '../services/api';
 
@@ -8,14 +21,13 @@ export default function StudentAssignments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Active submission modal / panel state
+  // Active submission modal state
   const [activeAssignment, setActiveAssignment] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [customFileUrl, setCustomFileUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitFeedback, setSubmitFeedback] = useState(null);
 
-  // Load assignments
   const fetchAssignments = async () => {
     if (!token) return;
     setLoading(true);
@@ -34,7 +46,6 @@ export default function StudentAssignments() {
     fetchAssignments();
   }, [token]);
 
-  // Open submission dialog
   const handleOpenSubmit = (assignment) => {
     setActiveAssignment(assignment);
     setSelectedFile(null);
@@ -49,13 +60,12 @@ export default function StudentAssignments() {
     setSubmitFeedback(null);
   };
 
-  // Submit coursework
   const handleSubmitAssignment = async (e) => {
     e.preventDefault();
     if (!selectedFile && !customFileUrl.trim()) {
       setSubmitFeedback({
         type: 'error',
-        text: 'Please select a file to upload or enter a repository/artifact URL.',
+        text: 'Please choose a file or specify a repository artifact URL.',
       });
       return;
     }
@@ -75,7 +85,6 @@ export default function StudentAssignments() {
         text: res.message || 'Assignment submitted successfully!',
       });
 
-      // Refresh assignments list to reflect new status
       await fetchAssignments();
 
       setTimeout(() => {
@@ -84,7 +93,7 @@ export default function StudentAssignments() {
     } catch (err) {
       setSubmitFeedback({
         type: 'error',
-        text: err.message || 'Failed to submit assignment. Please try again.',
+        text: err.message || 'Failed to submit assignment. Please retry.',
       });
     } finally {
       setSubmitting(false);
@@ -96,13 +105,17 @@ export default function StudentAssignments() {
       {/* Header */}
       <div className="section-header">
         <div>
-          <h2>Available Coursework Assignments 📖</h2>
+          <h2>
+            <FolderSimple size={28} weight="duotone" color="#38bdf8" />
+            <span>Available Coursework Assignments</span>
+          </h2>
           <p className="welcome-sub">
-            Review assignment prompts, verify submission deadlines, and upload your academic solutions.
+            Review coursework prompts, verify submission deadlines, and upload your academic solutions.
           </p>
         </div>
-        <button onClick={fetchAssignments} className="btn-refresh" title="Reload list">
-          🔄 Refresh
+        <button onClick={fetchAssignments} className="btn-refresh">
+          <ArrowsClockwise size={16} weight="bold" />
+          <span>Refresh</span>
         </button>
       </div>
 
@@ -110,15 +123,15 @@ export default function StudentAssignments() {
 
       {loading ? (
         <div className="loading-card">
-          <div className="spinner"></div>
+          <CircleNotch size={32} className="animate-spin" color="#38bdf8" />
           <p>Retrieving assignments from secure gateway...</p>
         </div>
       ) : assignments.length === 0 ? (
         <div className="card empty-state-box">
-          <span className="empty-icon" aria-hidden="true">📚</span>
+          <FolderSimple size={44} weight="duotone" className="empty-icon" color="#38bdf8" />
           <p className="empty-title">No Coursework Published Yet</p>
           <p className="empty-subtitle">
-            Your instructors have not published any coursework assignments yet. Please check back later.
+            Your instructors have not published coursework assignments yet. Please check back later.
           </p>
         </div>
       ) : (
@@ -130,7 +143,6 @@ export default function StudentAssignments() {
 
             return (
               <div key={assignment.id} className="card assignment-detail-card">
-                {/* Header */}
                 <div className="assignment-card-top">
                   <div>
                     <h3 className="assignment-title">{assignment.title}</h3>
@@ -144,24 +156,17 @@ export default function StudentAssignments() {
                       isSubmitted ? 'status-submitted-pill' : 'status-pending-pill'
                     }`}
                   >
-                    {isSubmitted
-                      ? `✓ ${sub?.status.toUpperCase() || 'SUBMITTED'}`
-                      : 'NOT SUBMITTED'}
+                    {isSubmitted ? `SUBMITTED (${sub?.status?.toUpperCase()})` : 'NOT SUBMITTED'}
                   </span>
                 </div>
 
-                {/* Description */}
                 <p className="assignment-desc">{assignment.description}</p>
 
-                {/* Deadline & Meta */}
                 <div className="assignment-meta-bar">
                   <div className="meta-item">
-                    <span className="meta-label">📅 Deadline:</span>
-                    <span
-                      className={`meta-value ${
-                        deadlinePassed && !isSubmitted ? 'text-late' : ''
-                      }`}
-                    >
+                    <CalendarBlank size={16} color="var(--text-muted)" />
+                    <span className="meta-label">Deadline:</span>
+                    <span className={`meta-value ${deadlinePassed && !isSubmitted ? 'text-late' : ''}`}>
                       {new Date(assignment.deadline).toLocaleString(undefined, {
                         dateStyle: 'medium',
                         timeStyle: 'short',
@@ -172,7 +177,8 @@ export default function StudentAssignments() {
 
                   {isSubmitted && sub && (
                     <div className="meta-item">
-                      <span className="meta-label">📤 Submitted On:</span>
+                      <CheckCircle size={16} color="#34d399" />
+                      <span className="meta-label">Submitted On:</span>
                       <span className="meta-value">
                         {new Date(sub.submitted_at).toLocaleString(undefined, {
                           dateStyle: 'medium',
@@ -189,7 +195,7 @@ export default function StudentAssignments() {
                     <div className="grading-header">
                       <span>Evaluation Status:</span>
                       <span className="marks-badge">
-                        {sub.marks !== null ? `Score: ${sub.marks} / 100` : 'Pending Grading'}
+                        {sub.marks !== null ? `Score: ${sub.marks} / 100` : 'Pending Evaluation'}
                       </span>
                     </div>
                     {sub.feedback ? (
@@ -206,19 +212,20 @@ export default function StudentAssignments() {
                         onClick={() => downloadSubmissionFile(token, sub.id, `${assignment.title}_solution`)}
                         className="btn-secure-download"
                       >
-                        🔒 Download Solution File
+                        <DownloadSimple size={14} weight="bold" />
+                        <span>Download Solution File</span>
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Action Row */}
                 <div className="assignment-footer-actions">
                   <button
                     onClick={() => handleOpenSubmit(assignment)}
                     className={`btn-submit-action ${isSubmitted ? 'btn-resubmit' : 'btn-submit-new'}`}
                   >
-                    {isSubmitted ? '🔄 Resubmit Solution' : '🚀 Upload Submission'}
+                    <UploadSimple size={15} weight="bold" />
+                    <span>{isSubmitted ? 'Resubmit Solution' : 'Submit Coursework'}</span>
                   </button>
                 </div>
               </div>
@@ -232,15 +239,15 @@ export default function StudentAssignments() {
         <div className="modal-backdrop">
           <div className="modal-window">
             <div className="modal-header">
-              <h3>Upload Assignment: {activeAssignment.title}</h3>
+              <h3>Upload: {activeAssignment.title}</h3>
               <button onClick={handleCloseSubmit} className="btn-close-modal">
-                ✕
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleSubmitAssignment} className="modal-body">
               <p className="modal-info">
-                Please upload your solution file (<strong>PDF, DOC, DOCX</strong> - Max 15MB) to Supabase Storage.
+                Deposit your solution file (<strong>PDF, DOC, DOCX</strong> — Max 15MB) into private Supabase Storage.
               </p>
 
               {submitFeedback && (
@@ -250,11 +257,14 @@ export default function StudentAssignments() {
               )}
 
               <div className="form-group">
-                <label htmlFor="file-upload">Choose Solution File (PDF, DOC, DOCX - Max 15MB)</label>
+                <label className="form-label" htmlFor="modal-file-input">
+                  <span>Select Solution Document</span>
+                </label>
                 <input
-                  id="file-upload"
+                  id="modal-file-input"
                   type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="form-input"
+                  accept=".pdf,.doc,.docx"
                   onChange={(e) => setSelectedFile(e.target.files[0])}
                   disabled={submitting}
                 />
@@ -270,11 +280,14 @@ export default function StudentAssignments() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="custom-url">Storage / Repository Artifact URL</label>
+                <label className="form-label" htmlFor="custom-url">
+                  <span>Artifact URL</span>
+                </label>
                 <input
                   id="custom-url"
                   type="url"
-                  placeholder="https://storage.supabase.co/submissions/my-assignment.pdf"
+                  className="form-input"
+                  placeholder="https://storage.supabase.co/submissions/solution.pdf"
                   value={customFileUrl}
                   onChange={(e) => setCustomFileUrl(e.target.value)}
                   disabled={submitting}
@@ -293,9 +306,10 @@ export default function StudentAssignments() {
                 <button
                   type="submit"
                   className="btn-primary"
+                  style={{ width: 'auto', margin: 0 }}
                   disabled={submitting}
                 >
-                  {submitting ? 'Uploading to Gateway...' : 'Submit Coursework'}
+                  {submitting ? 'Uploading...' : 'Confirm Submission'}
                 </button>
               </div>
             </form>

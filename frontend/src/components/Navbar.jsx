@@ -1,5 +1,18 @@
 import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
+import {
+  ShieldCheck,
+  SquaresFour,
+  FolderSimple,
+  UploadSimple,
+  ShieldWarning,
+  SignOut,
+  List,
+  X,
+  GraduationCap,
+  ChalkboardTeacher,
+  UserGear,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
@@ -9,6 +22,12 @@ export default function Navbar() {
   if (!user) return null;
 
   const closeMobile = () => setMobileMenuOpen(false);
+
+  const getRoleIcon = () => {
+    if (user.role === 'student') return <GraduationCap size={14} weight="bold" />;
+    if (user.role === 'faculty') return <ChalkboardTeacher size={14} weight="bold" />;
+    return <UserGear size={14} weight="bold" />;
+  };
 
   return (
     <header className="navbar">
@@ -26,10 +45,12 @@ export default function Navbar() {
             className="navbar-brand"
             onClick={closeMobile}
           >
-            <span className="brand-shield" aria-hidden="true">🛡️</span>
+            <div className="brand-icon-wrapper">
+              <ShieldCheck size={22} weight="duotone" />
+            </div>
             <div className="brand-text">
               <span className="brand-title">ZeroTrust Gateway</span>
-              <span className="brand-sub">Academic Submission Security</span>
+              <span className="brand-sub">Academic Boundary</span>
             </div>
           </Link>
 
@@ -41,25 +62,29 @@ export default function Navbar() {
                   to="/student/dashboard"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  Dashboard
+                  <SquaresFour size={16} weight="duotone" />
+                  <span>Dashboard</span>
                 </NavLink>
                 <NavLink
                   to="/student/assignments"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  Assignments
+                  <FolderSimple size={16} weight="duotone" />
+                  <span>Assignments</span>
                 </NavLink>
                 <NavLink
                   to="/student/submissions"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  My Submissions
+                  <UploadSimple size={16} weight="duotone" />
+                  <span>My Submissions</span>
                 </NavLink>
                 <NavLink
                   to="/security/logs"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  🛡️ Security Logs
+                  <ShieldWarning size={16} weight="duotone" />
+                  <span>Security Logs</span>
                 </NavLink>
               </>
             )}
@@ -70,25 +95,29 @@ export default function Navbar() {
                   to="/faculty/dashboard"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  Dashboard
+                  <SquaresFour size={16} weight="duotone" />
+                  <span>Dashboard</span>
                 </NavLink>
                 <NavLink
                   to="/faculty/assignments"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  Coursework
+                  <FolderSimple size={16} weight="duotone" />
+                  <span>Coursework</span>
                 </NavLink>
                 <NavLink
                   to="/faculty/submissions"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  Student Submissions
+                  <UploadSimple size={16} weight="duotone" />
+                  <span>Submissions</span>
                 </NavLink>
                 <NavLink
                   to="/security/logs"
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                 >
-                  🛡️ Security Logs
+                  <ShieldWarning size={16} weight="duotone" />
+                  <span>Security Logs</span>
                 </NavLink>
               </>
             )}
@@ -98,27 +127,35 @@ export default function Navbar() {
                 to="/security/logs"
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                🛡️ Security Audit Logs
+                <ShieldWarning size={16} weight="duotone" />
+                <span>Security Audit Logs</span>
               </NavLink>
             )}
           </nav>
         </div>
 
-        {/* Right Section: User & Logout + Hamburger */}
+        {/* Right Section: Telemetry Badge + User Profile & Sign Out */}
         <div className="navbar-actions">
+          <div className="perimeter-badge">
+            <span className="pulse-dot"></span>
+            <span>ZT Perimeter Active</span>
+          </div>
+
           <div className="navbar-user">
             <div className="user-info">
               <span className="user-name">{user.name}</span>
               <span className={`role-badge role-${user.role}`}>
-                {user.role.toUpperCase()}
+                {getRoleIcon()}
+                <span>{user.role.toUpperCase()}</span>
               </span>
             </div>
             <button
               onClick={logout}
               className="btn-logout"
-              title="End Zero Trust Session"
+              title="Terminate Zero Trust Session"
             >
-              Sign Out
+              <SignOut size={15} weight="bold" />
+              <span>Sign Out</span>
             </button>
           </div>
 
@@ -127,15 +164,15 @@ export default function Navbar() {
             type="button"
             className="mobile-menu-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle navigation menu"
+            aria-label="Toggle navigation"
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? '✕' : '☰'}
+            {mobileMenuOpen ? <X size={20} /> : <List size={20} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown Navigation */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="mobile-nav-drawer">
           <nav className="mobile-nav-links">
@@ -146,28 +183,32 @@ export default function Navbar() {
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  📊 Dashboard
+                  <SquaresFour size={18} weight="duotone" />
+                  <span>Dashboard</span>
                 </NavLink>
                 <NavLink
                   to="/student/assignments"
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  📖 Assignments
+                  <FolderSimple size={18} weight="duotone" />
+                  <span>Assignments</span>
                 </NavLink>
                 <NavLink
                   to="/student/submissions"
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  📁 My Submissions
+                  <UploadSimple size={18} weight="duotone" />
+                  <span>My Submissions</span>
                 </NavLink>
                 <NavLink
                   to="/security/logs"
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  🛡️ Security Audit Logs
+                  <ShieldWarning size={18} weight="duotone" />
+                  <span>Security Logs</span>
                 </NavLink>
               </>
             )}
@@ -179,28 +220,32 @@ export default function Navbar() {
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  🏛️ Dashboard
+                  <SquaresFour size={18} weight="duotone" />
+                  <span>Dashboard</span>
                 </NavLink>
                 <NavLink
                   to="/faculty/assignments"
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  📝 Coursework
+                  <FolderSimple size={18} weight="duotone" />
+                  <span>Coursework</span>
                 </NavLink>
                 <NavLink
                   to="/faculty/submissions"
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  📥 Student Submissions
+                  <UploadSimple size={18} weight="duotone" />
+                  <span>Student Submissions</span>
                 </NavLink>
                 <NavLink
                   to="/security/logs"
                   className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                   onClick={closeMobile}
                 >
-                  🛡️ Security Audit Logs
+                  <ShieldWarning size={18} weight="duotone" />
+                  <span>Security Logs</span>
                 </NavLink>
               </>
             )}
@@ -211,17 +256,19 @@ export default function Navbar() {
                 className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}
                 onClick={closeMobile}
               >
-                🛡️ Security Audit Logs
+                <ShieldWarning size={18} weight="duotone" />
+                <span>Security Audit Logs</span>
               </NavLink>
             )}
 
             <div className="mobile-user-footer">
-              <div className="mobile-user-details">
-                <span>Signed in as <strong>{user.name}</strong></span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{user.name}</span>
                 <span className={`role-badge role-${user.role}`}>{user.role.toUpperCase()}</span>
               </div>
-              <button onClick={logout} className="btn-logout w-full">
-                Sign Out
+              <button onClick={logout} className="btn-logout" style={{ width: '100%', justifyContent: 'center' }}>
+                <SignOut size={16} weight="bold" />
+                <span>Sign Out</span>
               </button>
             </div>
           </nav>

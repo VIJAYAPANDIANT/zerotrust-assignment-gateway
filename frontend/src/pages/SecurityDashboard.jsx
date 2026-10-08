@@ -1,4 +1,16 @@
 import { useState, useEffect } from 'react';
+import {
+  ShieldCheck,
+  ArrowsClockwise,
+  Pulse,
+  CheckCircle,
+  Prohibit,
+  WarningOctagon,
+  MagnifyingGlass,
+  FunnelSimple,
+  Globe,
+  CircleNotch,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getSecurityLogs } from '../services/api';
 
@@ -61,20 +73,26 @@ export default function SecurityDashboard() {
       {/* Header Banner */}
       <div className="section-header">
         <div>
-          <h2>Application Security Audit Logs 🛡️</h2>
+          <h2>
+            <ShieldCheck size={28} weight="duotone" color="#38bdf8" />
+            <span>Security Operations Telemetry (SOC)</span>
+          </h2>
           <p className="welcome-sub">
-            Real-time inspection of application-level authentication, authorization, and ownership decisions.
+            Real-time audit log stream of continuous authentication, authorization checks, and access decisions.
           </p>
         </div>
-        <button onClick={fetchLogs} className="btn-refresh" title="Reload audit logs">
-          🔄 Refresh Activity
+        <button onClick={fetchLogs} className="btn-refresh" title="Reload audit activity">
+          <ArrowsClockwise size={16} weight="bold" />
+          <span>Refresh Telemetry</span>
         </button>
       </div>
 
       {/* Scope Disclaimer / Zero Trust Notice */}
-      <div className="alert-banner info" style={{ marginBottom: '1.5rem' }}>
-        <strong>ℹ️ Application-Level Security Logs:</strong> These records are evaluated and stored directly by the
-        Node.js Express application origin server for internal Zero Trust verification. <em>(Note: These are not Cloudflare edge logs; Cloudflare tunnel protection will be layered in subsequent phases).</em>
+      <div className="alert-banner info">
+        <Pulse size={18} weight="duotone" style={{ flexShrink: 0 }} />
+        <div>
+          <strong>Application Origin Telemetry:</strong> Access decisions are evaluated at each route by the Zero Trust enforcement gateway.
+        </div>
       </div>
 
       {error && <div className="alert-banner error">{error}</div>}
@@ -82,34 +100,42 @@ export default function SecurityDashboard() {
       {/* KPI Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
-          <span className="stat-icon">📊</span>
+          <div className="stat-icon-wrapper">
+            <Pulse size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value">{loading ? '...' : stats.totalRequests}</span>
-            <span className="stat-label">Total Requests</span>
+            <span className="stat-value">{loading ? '—' : stats.totalRequests}</span>
+            <span className="stat-label">Total Audited Requests</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">✅</span>
+          <div className="stat-icon-wrapper allow">
+            <CheckCircle size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value text-green">{loading ? '...' : stats.allowed}</span>
-            <span className="stat-label">Allowed (ALLOW)</span>
+            <span className="stat-value text-green">{loading ? '—' : stats.allowed}</span>
+            <span className="stat-label">Authorized (ALLOW)</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">⛔</span>
+          <div className="stat-icon-wrapper block">
+            <Prohibit size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value text-red">{loading ? '...' : stats.blocked}</span>
-            <span className="stat-label">Blocked (BLOCK)</span>
+            <span className="stat-value text-red">{loading ? '—' : stats.blocked}</span>
+            <span className="stat-label">Enforced Denials (BLOCK)</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">⚠️</span>
+          <div className="stat-icon-wrapper failure">
+            <WarningOctagon size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value text-amber">{loading ? '...' : stats.authFailures}</span>
-            <span className="stat-label">Authentication Failures</span>
+            <span className="stat-value text-amber">{loading ? '—' : stats.authFailures}</span>
+            <span className="stat-label">Auth Failures (FAILURE)</span>
           </div>
         </div>
       </div>
@@ -118,46 +144,56 @@ export default function SecurityDashboard() {
       <div className="card mt-4">
         <div className="card-header flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h3>📋 Recent Security & Access Activity</h3>
-            <span className="field-hint">
-              Displaying {filteredLogs.length} of {logs.length} logged events
+            <h3>
+              <ShieldCheck size={20} weight="duotone" color="#38bdf8" />
+              <span>Continuous Access Activity Log</span>
+            </h3>
+            <span className="sub-text">
+              Displaying {filteredLogs.length} of {logs.length} logged boundary transactions
             </span>
           </div>
 
           {/* Search & Filter Controls */}
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <input
-              type="text"
-              placeholder="Search action, endpoint, email, IP..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ padding: '0.45rem 0.85rem', fontSize: '0.85rem', borderRadius: 6, border: '1px solid #cbd5e1', width: 250 }}
-            />
+            <div className="input-container" style={{ width: 260 }}>
+              <span className="input-icon-adornment">
+                <MagnifyingGlass size={15} />
+              </span>
+              <input
+                type="text"
+                placeholder="Search action, route, email, IP..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="form-input input-has-icon"
+                style={{ fontSize: '0.82rem', padding: '0.45rem 0.75rem 0.45rem 2.2rem' }}
+              />
+            </div>
             <select
               value={filterResult}
               onChange={(e) => setFilterResult(e.target.value)}
-              style={{ padding: '0.45rem 0.85rem', fontSize: '0.85rem', borderRadius: 6, border: '1px solid #cbd5e1' }}
+              className="form-input"
+              style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem', width: 'auto' }}
             >
               <option value="ALL">All Decisions</option>
-              <option value="ALLOW">ALLOWED</option>
-              <option value="BLOCK">BLOCKED</option>
-              <option value="FAILURE">FAILURES</option>
+              <option value="ALLOW">ALLOW Only</option>
+              <option value="BLOCK">BLOCK Only</option>
+              <option value="FAILURE">FAILURE Only</option>
             </select>
           </div>
         </div>
 
         <div className="card-body" style={{ padding: 0 }}>
           {loading ? (
-            <div className="loading-card" style={{ padding: '3rem' }}>
-              <div className="spinner"></div>
-              <p>Retrieving origin security audit logs...</p>
+            <div className="loading-card" style={{ padding: '3.5rem' }}>
+              <CircleNotch size={32} className="animate-spin" color="#38bdf8" />
+              <p>Streaming security records...</p>
             </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="empty-state-box" style={{ margin: '2rem' }}>
-              <span className="empty-icon" aria-hidden="true">🛡️</span>
-              <p className="empty-title">No Access Logs Match Filter</p>
+            <div className="empty-state-box" style={{ margin: '2.5rem' }}>
+              <ShieldCheck size={36} weight="duotone" className="empty-state-icon" />
+              <p className="empty-title">No Audit Logs Match Criteria</p>
               <p className="empty-subtitle">
-                No audited request matches the current search query or decision criteria.
+                No recorded transaction matches the search query or decision filter.
               </p>
             </div>
           ) : (
@@ -168,9 +204,9 @@ export default function SecurityDashboard() {
                     <th>Timestamp</th>
                     <th>User Identity</th>
                     <th>Action</th>
-                    <th>Endpoint</th>
-                    <th>Security Decision</th>
-                    <th>Client IP</th>
+                    <th>Endpoint Route</th>
+                    <th>Boundary Decision</th>
+                    <th>Client Address</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,29 +214,27 @@ export default function SecurityDashboard() {
                     const resultUpper = log.result?.toUpperCase() || 'ALLOW';
                     const isAllow = resultUpper === 'ALLOW' || resultUpper === 'SUCCESS';
                     const isBlock = resultUpper === 'BLOCK' || resultUpper === 'DENIED';
-                    const isFailure = resultUpper === 'FAILURE';
 
                     return (
                       <tr key={log.id}>
-                        <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem', color: '#64748b' }}>
-                          {new Date(log.created_at).toLocaleString(undefined, {
-                            dateStyle: 'short',
-                            timeStyle: 'medium',
-                          })}
+                        <td>
+                          <span className="timestamp" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            {new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
                         </td>
                         <td>
                           {log.user_email ? (
                             <div>
-                              <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                                 {log.user_name || log.user_email}
                               </strong>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                {log.user_email} {log.user_role && `(${log.user_role})`}
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                                {log.user_email} {log.user_role && `• [${log.user_role.toUpperCase()}]`}
                               </div>
                             </div>
                           ) : (
-                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                              Unauthenticated (Anonymous)
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                              Anonymous Principal
                             </span>
                           )}
                         </td>
@@ -208,7 +242,7 @@ export default function SecurityDashboard() {
                           <code className="action-code-tag">{log.action}</code>
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', color: '#334155' }}>
+                          <span style={{ fontSize: '0.82rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
                             {log.endpoint}
                           </span>
                         </td>
@@ -222,11 +256,11 @@ export default function SecurityDashboard() {
                                 : 'result-failure'
                             }`}
                           >
-                            {isAllow ? '✓ ALLOW' : isBlock ? '⛔ BLOCK' : '⚠️ FAILURE'}
+                            {isAllow ? 'ALLOW' : isBlock ? 'BLOCK' : 'FAILURE'}
                           </span>
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontFamily: 'monospace' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                             {log.ip_address}
                           </span>
                         </td>

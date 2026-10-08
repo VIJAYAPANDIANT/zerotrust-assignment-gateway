@@ -1,5 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  GraduationCap,
+  BookOpen,
+  UploadSimple,
+  CheckCircle,
+  ShieldCheck,
+  CloudArrowUp,
+  FileText,
+  DownloadSimple,
+  WarningCircle,
+  ArrowRight,
+  X,
+  CircleNotch,
+  CalendarBlank,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import {
   getAssignments,
@@ -22,7 +37,7 @@ export default function StudentDashboard() {
   // Upload Form State
   const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState(null); // { type: 'info'|'success'|'error', message: '', progress: number, stepText: '' }
+  const [uploadStatus, setUploadStatus] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
 
@@ -78,7 +93,7 @@ export default function StudentDashboard() {
     if (!allowedExtensions.includes(fileExt)) {
       setUploadStatus({
         type: 'error',
-        message: `Invalid file format "${fileExt}". Only PDF, DOC, and DOCX documents are accepted.`,
+        message: `Invalid format "${fileExt}". Allowed formats: PDF, DOC, DOCX.`,
         progress: 0,
         stepText: 'Format verification failed',
       });
@@ -90,7 +105,7 @@ export default function StudentDashboard() {
     if (file.size > maxSizeBytes) {
       setUploadStatus({
         type: 'error',
-        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds maximum allowed limit (15 MB).`,
+        message: `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds 15 MB limit.`,
         progress: 0,
         stepText: 'Size limit exceeded',
       });
@@ -130,22 +145,20 @@ export default function StudentDashboard() {
     setIsUploading(true);
 
     try {
-      // Step 1: Verification
       setUploadStatus({
         type: 'info',
-        message: 'Verifying student identity and session authorization...',
+        message: 'Verifying student identity & role claims against Zero Trust gateway...',
         progress: 25,
-        stepText: 'Step 1 of 4: Continuous Zero Trust verification',
+        stepText: 'Stage 1/4: Continuous Authentication Assertion',
       });
 
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((r) => setTimeout(r, 300));
 
-      // Step 2: Storage Upload
       setUploadStatus({
         type: 'info',
-        message: `Uploading "${selectedFile.name}" to Supabase Storage ("assignments" bucket)...`,
+        message: `Uploading "${selectedFile.name}" to private Supabase Storage ("assignments" bucket)...`,
         progress: 60,
-        stepText: 'Step 2 of 4: Streaming buffer to private cloud storage',
+        stepText: 'Stage 2/4: Private Object Stream Encrypted at Rest',
       });
 
       const res = await submitAssignment(token, {
@@ -153,22 +166,20 @@ export default function StudentDashboard() {
         file: selectedFile,
       });
 
-      // Step 3: Database & Access Log
       setUploadStatus({
         type: 'info',
-        message: 'Recording submission record and writing to Zero Trust access log...',
+        message: 'Recording submission index and signing tamper-evident access log...',
         progress: 85,
-        stepText: 'Step 3 of 4: Updating submissions table and access_logs',
+        stepText: 'Stage 3/4: Database Persistence & SOC Telemetry',
       });
 
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((r) => setTimeout(r, 300));
 
-      // Step 4: Completion
       setUploadStatus({
         type: 'success',
-        message: res.message || 'Coursework uploaded successfully to Supabase Storage!',
+        message: res.message || 'Coursework verified and deposited securely in Supabase Storage!',
         progress: 100,
-        stepText: 'Step 4 of 4: Completed & verified',
+        stepText: 'Stage 4/4: Verified & Committed',
       });
 
       // Reset file input
@@ -176,12 +187,11 @@ export default function StudentDashboard() {
       const fileInput = document.getElementById('dashboard-file-input');
       if (fileInput) fileInput.value = '';
 
-      // Refresh data to update submission status
       await loadDashboardData();
     } catch (err) {
       setUploadStatus({
         type: 'error',
-        message: err.message || 'Upload failed. Please ensure file is valid and try again.',
+        message: err.message || 'Upload failed. Please ensure file meets parameters and retry.',
         progress: 0,
         stepText: 'Upload error',
       });
@@ -210,284 +220,278 @@ export default function StudentDashboard() {
       {/* Welcome Banner */}
       <div className="welcome-banner">
         <div>
-          <h2>Welcome back, {user?.name} 🎓</h2>
-          <p className="welcome-sub">Student Portal • Academic Year 2026</p>
+          <h2>
+            <GraduationCap size={28} weight="duotone" color="#38bdf8" />
+            <span>Welcome back, {user?.name}</span>
+          </h2>
+          <p className="welcome-sub">Student Security Workspace • Continuous Verification Active</p>
         </div>
-        <div className="status-pill status-verified">
-          <span className="dot"></span> Identity Verified (Zero Trust)
+        <div className="perimeter-badge">
+          <span className="pulse-dot"></span>
+          <span>Zero Trust Session Verified</span>
         </div>
       </div>
 
       {/* KPI Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <span className="stat-icon">📚</span>
+          <div className="stat-icon-wrapper">
+            <BookOpen size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value">{loading ? '...' : stats.totalAssignments}</span>
+            <span className="stat-value">{loading ? '—' : stats.totalAssignments}</span>
             <span className="stat-label">Available Coursework</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">📤</span>
+          <div className="stat-icon-wrapper">
+            <UploadSimple size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value">{loading ? '...' : stats.totalSubmissions}</span>
-            <span className="stat-label">Submitted Assignments</span>
+            <span className="stat-value">{loading ? '—' : stats.totalSubmissions}</span>
+            <span className="stat-label">My Submissions</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">📊</span>
+          <div className="stat-icon-wrapper allow">
+            <CheckCircle size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value">{loading ? '...' : stats.gradedCount}</span>
+            <span className="stat-value">{loading ? '—' : stats.gradedCount}</span>
             <span className="stat-label">Evaluated / Graded</span>
           </div>
         </div>
 
         <div className="stat-card">
-          <span className="stat-icon">🛡️</span>
+          <div className="stat-icon-wrapper">
+            <ShieldCheck size={22} weight="duotone" />
+          </div>
           <div className="stat-info">
-            <span className="stat-value text-green">Active</span>
+            <span className="stat-value" style={{ color: '#10b981', fontSize: '1.4rem' }}>Enforced</span>
             <span className="stat-label">Zero Trust Boundary</span>
           </div>
         </div>
       </div>
 
-      {/* ASSIGNMENT FILE UPLOAD SECTION (SUPABASE STORAGE) */}
+      {/* ASSIGNMENT FILE UPLOAD WORKFLOW */}
       <div className="upload-card">
         <div className="upload-card-header">
           <h3>
-            <span>☁️</span> Upload Assignment (Supabase Storage)
+            <CloudArrowUp size={22} weight="duotone" color="#38bdf8" />
+            <span>Secure Coursework Upload</span>
           </h3>
-          <span className="status-pill status-submitted-pill">
-            Bucket: assignments (Private)
+          <span className="decision-pill decision-allow">
+            Private Vault: assignments
           </span>
         </div>
 
         <form onSubmit={handleUploadSubmit} className="upload-form-body">
           <div className="form-group">
-            <label htmlFor="assign-select">
-              <strong>Select Assignment Coursework *</strong>
+            <label className="form-label" htmlFor="assign-select">
+              <span>Select Coursework Target *</span>
             </label>
             <select
               id="assign-select"
+              className="form-input"
               value={selectedAssignmentId}
               onChange={(e) => setSelectedAssignmentId(e.target.value)}
               disabled={isUploading || loading}
               required
             >
               <option value="" disabled>
-                -- Choose an assignment to submit --
+                -- Select assignment destination --
               </option>
               {assignments.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.title} {a.submission_status !== 'not_submitted' ? '(Already Submitted)' : '(Pending)'}
+                  {a.title} {a.submission_status !== 'not_submitted' ? '• [Already Submitted]' : '• [Pending Action]'}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* File Selector */}
+          {/* File Selector Dropzone */}
           <div className="form-group">
-            <label htmlFor="dashboard-file-input">
-              <strong>Select Solution File (PDF, DOC, DOCX - Max 15MB) *</strong>
+            <label className="form-label">
+              <span>Solution Document (PDF, DOC, DOCX — Max 15MB) *</span>
             </label>
+            <input
+              type="file"
+              id="dashboard-file-input"
+              accept=".pdf,.doc,.docx"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              disabled={isUploading}
+            />
+
             <div
-              className="file-drop-zone"
+              className={`file-drop-zone ${selectedFile ? 'has-file' : ''}`}
               onClick={() => document.getElementById('dashboard-file-input')?.click()}
             >
-              <span className="file-drop-icon">📁</span>
+              <CloudArrowUp size={36} weight="duotone" className="file-drop-icon" />
               <p className="file-drop-instructions">
-                {selectedFile ? 'Click or tap to choose a different file' : 'Click to select solution file from your device'}
+                {selectedFile ? selectedFile.name : 'Click to select solution file from device'}
               </p>
-              <p className="file-drop-hint">
-                Accepted: <strong>PDF (.pdf), Microsoft Word (.doc, .docx)</strong> • Up to 15 MB
+              <p className="file-drop-sub">
+                {selectedFile
+                  ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Ready for cryptographic deposit`
+                  : 'Zero Trust enforced • Scanned and isolated in private Supabase Storage'}
               </p>
-
-              <input
-                id="dashboard-file-input"
-                type="file"
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={handleFileChange}
-                disabled={isUploading}
-                style={{ display: 'none' }}
-              />
-
-              {selectedFile && (
-                <div className="selected-file-badge">
-                  <span>📄 {selectedFile.name}</span>
-                  <span>({(selectedFile.size / 1024).toFixed(1)} KB)</span>
-                </div>
-              )}
             </div>
+
+            {selectedFile && (
+              <div className="file-chip">
+                <FileText size={18} weight="duotone" color="#38bdf8" />
+                <span>{selectedFile.name}</span>
+                <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+                <button
+                  type="button"
+                  className="btn-file-clear"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedFile(null);
+                    const el = document.getElementById('dashboard-file-input');
+                    if (el) el.value = '';
+                  }}
+                  title="Remove selected file"
+                >
+                  <X size={16} weight="bold" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Upload Progress & Status */}
+          {/* Upload Progress Bar & Verification Stages */}
           {uploadStatus && (
             <div className="upload-progress-box">
-              <div className="progress-header">
-                <span>{uploadStatus.stepText}</span>
-                <span>{uploadStatus.progress}%</span>
+              <div className="progress-meta">
+                <span className="progress-step">{uploadStatus.stepText}</span>
+                <span className="progress-percent">{uploadStatus.progress}%</span>
               </div>
               <div className="progress-bar-track">
                 <div
                   className="progress-bar-fill"
-                  style={{ width: `${uploadStatus.progress}%` }}
+                  style={{
+                    width: `${uploadStatus.progress}%`,
+                    background:
+                      uploadStatus.type === 'error'
+                        ? 'var(--color-block)'
+                        : uploadStatus.type === 'success'
+                        ? 'var(--color-allow)'
+                        : 'linear-gradient(90deg, #0284c7, #38bdf8)',
+                  }}
                 ></div>
               </div>
-              <div className="progress-status-sub">
-                <span>
-                  {uploadStatus.type === 'error' ? '❌' : uploadStatus.type === 'success' ? '✅' : '⏳'}
-                </span>
-                <span>{uploadStatus.message}</span>
-              </div>
+              <p className="progress-message">{uploadStatus.message}</p>
             </div>
           )}
 
-          {/* Upload Button */}
-          <div style={{ marginTop: '1.25rem' }}>
-            <button
-              type="submit"
-              className="btn-upload-submit"
-              disabled={isUploading || !selectedFile || !selectedAssignmentId}
-            >
-              {isUploading ? (
-                <>
-                  <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }}></div>
-                  <span>Uploading to Supabase Storage...</span>
-                </>
-              ) : (
-                <>
-                  <span>🚀</span>
-                  <span>Upload & Submit Assignment</span>
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={isUploading || !selectedFile || !selectedAssignmentId}
+          >
+            {isUploading ? (
+              <>
+                <CircleNotch size={18} className="animate-spin" />
+                <span>Securing & Uploading...</span>
+              </>
+            ) : (
+              <>
+                <UploadSimple size={18} weight="bold" />
+                <span>Submit to Zero Trust Vault</span>
+              </>
+            )}
+          </button>
         </form>
       </div>
 
-      {/* SUBMISSION STATUS SUMMARY */}
-      <div className="card mt-4">
-        <div className="card-header flex-between">
-          <h3>📋 Submission Status & Evaluation History</h3>
-          <button onClick={loadDashboardData} className="btn-refresh" title="Reload list">
-            🔄 Refresh
-          </button>
+      {/* RECENT SUBMISSIONS TABLE */}
+      <div className="card">
+        <div className="card-header">
+          <h3>
+            <FileText size={20} weight="duotone" color="#38bdf8" />
+            <span>My Submitted Coursework</span>
+          </h3>
+          <Link to="/student/submissions" className="btn-action">
+            <span>View All</span>
+            <ArrowRight size={14} weight="bold" />
+          </Link>
         </div>
-        <div className="card-body">
+
+        <div className="table-responsive">
           {loading ? (
-            <div className="loading-card" style={{ padding: '2.5rem' }}>
-              <div className="spinner"></div>
-              <p>Retrieving your coursework submissions...</p>
+            <div className="empty-state">
+              <CircleNotch size={28} className="animate-spin" color="#38bdf8" />
+              <p className="empty-state-desc">Loading coursework records...</p>
             </div>
           ) : submissions.length === 0 ? (
-            <div className="empty-state-box">
-              <span className="empty-icon" aria-hidden="true">📁</span>
-              <p className="empty-title">No Coursework Submissions Yet</p>
-              <p className="empty-subtitle">
-                Select an assignment above, upload your PDF or Word document, and submit through the secure gateway.
-              </p>
+            <div className="empty-state">
+              <UploadSimple size={36} weight="duotone" className="empty-state-icon" />
+              <h4 className="empty-state-title">No submissions on record</h4>
+              <p className="empty-state-desc">Select an assignment above to upload your first solution document.</p>
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="faculty-table">
-                <thead>
-                  <tr>
-                    <th>Assignment Title</th>
-                    <th>Submitted At</th>
-                    <th>Status</th>
-                    <th>Score / Marks</th>
-                    <th>Secure Artifact Access</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions.map((sub) => (
-                    <tr key={sub.id}>
-                      <td>
-                        <strong>{sub.assignment_title}</strong>
-                      </td>
-                      <td>
-                        {new Date(sub.submitted_at).toLocaleString(undefined, {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })}
-                      </td>
-                      <td>
-                        <span className={`status-pill status-${sub.status}`}>
-                          {sub.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        {sub.marks !== null ? (
-                          <span className="marks-badge">{sub.marks} / 100</span>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Assignment</th>
+                  <th>Submitted Date</th>
+                  <th>Evaluation Status</th>
+                  <th>Score</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {submissions.slice(0, 5).map((sub) => (
+                  <tr key={sub.id}>
+                    <td>
+                      <strong style={{ color: 'var(--text-primary)' }}>{sub.assignment_title || 'Assignment'}</strong>
+                    </td>
+                    <td>
+                      <span className="timestamp">
+                        {new Date(sub.submitted_at || sub.created_at).toLocaleDateString()} {new Date(sub.submitted_at || sub.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
+                    <td>
+                      {sub.marks !== null ? (
+                        <span className="decision-pill decision-allow">Graded</span>
+                      ) : (
+                        <span className="decision-pill decision-failure">Pending Evaluation</span>
+                      )}
+                    </td>
+                    <td>
+                      {sub.marks !== null ? (
+                        <strong style={{ fontFamily: 'var(--font-mono)', color: '#34d399' }}>
+                          {sub.marks} / 100
+                        </strong>
+                      ) : (
+                        <span style={{ color: 'var(--text-faint)' }}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        className="btn-action"
+                        onClick={() => handleDownloadFile(sub)}
+                        disabled={downloadingId === sub.id}
+                        title="Download verified solution artifact"
+                      >
+                        {downloadingId === sub.id ? (
+                          <CircleNotch size={14} className="animate-spin" />
                         ) : (
-                          <span className="feedback-pending">Pending Grading</span>
+                          <DownloadSimple size={14} weight="bold" />
                         )}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => handleDownloadFile(sub)}
-                          className="btn-secure-download"
-                          disabled={downloadingId === sub.id}
-                        >
-                          {downloadingId === sub.id ? 'Retrieving...' : '🔒 Retrieve File'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <span>Download</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </div>
-      </div>
-
-      {/* Security & Access Posture */}
-      <div className="grid-cards mt-4">
-        {/* Quick Actions */}
-        <div className="card">
-          <div className="card-header">
-            <h3>⚡ Quick Navigation</h3>
-          </div>
-          <div className="card-body">
-            <p className="card-description">
-              Browse detailed coursework prompts, view instructor guidelines, or inspect grading feedback.
-            </p>
-            <div className="action-buttons-group">
-              <Link to="/student/assignments" className="btn-action primary">
-                📖 Browse All Assignments
-              </Link>
-              <Link to="/student/submissions" className="btn-action secondary">
-                📁 Full Submission History
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Security & Storage Posture */}
-        <div className="card">
-          <div className="card-header">
-            <h3>🔒 Zero Trust Storage Protection</h3>
-          </div>
-          <div className="card-body">
-            <div className="detail-row">
-              <span className="label">Storage Backend:</span>
-              <span className="value">Supabase Storage</span>
-            </div>
-            <div className="detail-row">
-              <span className="label">Bucket Isolation:</span>
-              <span className="value badge-student">assignments (Private)</span>
-            </div>
-            <div className="detail-row">
-              <span className="label">Access Control:</span>
-              <span className="value text-green">Least-Privilege Signed URLs</span>
-            </div>
-            <div className="detail-row">
-              <span className="label">Ownership Verification:</span>
-              <span className="value">Strict Student-Only Isolation</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

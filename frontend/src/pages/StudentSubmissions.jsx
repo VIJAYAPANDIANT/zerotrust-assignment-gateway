@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  UploadSimple,
+  ArrowsClockwise,
+  CalendarBlank,
+  DownloadSimple,
+  CircleNotch,
+  FolderSimple,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getMySubmissions, downloadSubmissionFile } from '../services/api';
 
@@ -8,6 +16,7 @@ export default function StudentSubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const fetchSubmissions = async () => {
     if (!token) return;
@@ -27,18 +36,37 @@ export default function StudentSubmissions() {
     fetchSubmissions();
   }, [token]);
 
+  const handleDownload = async (sub) => {
+    setDownloadingId(sub.id);
+    try {
+      await downloadSubmissionFile(
+        token,
+        sub.id,
+        `${sub.assignment_title || 'assignment'}_solution`
+      );
+    } catch (err) {
+      alert(`Download Error: ${err.message}`);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="dashboard-container">
       {/* Header */}
       <div className="section-header">
         <div>
-          <h2>My Submission History 📁</h2>
+          <h2>
+            <UploadSimple size={28} weight="duotone" color="#38bdf8" />
+            <span>My Submission History</span>
+          </h2>
           <p className="welcome-sub">
-            Track evaluation status, submitted artifacts, marks, and faculty remarks.
+            Track evaluation status, download submitted solution artifacts, view marks and faculty remarks.
           </p>
         </div>
-        <button onClick={fetchSubmissions} className="btn-refresh" title="Reload submissions">
-          🔄 Refresh
+        <button onClick={fetchSubmissions} className="btn-refresh">
+          <ArrowsClockwise size={16} weight="bold" />
+          <span>Refresh</span>
         </button>
       </div>
 
@@ -46,18 +74,19 @@ export default function StudentSubmissions() {
 
       {loading ? (
         <div className="loading-card">
-          <div className="spinner"></div>
+          <CircleNotch size={32} className="animate-spin" color="#38bdf8" />
           <p>Retrieving your submission records...</p>
         </div>
       ) : submissions.length === 0 ? (
         <div className="card empty-state-box">
-          <span className="empty-icon" aria-hidden="true">📤</span>
+          <UploadSimple size={44} weight="duotone" className="empty-icon" color="#38bdf8" />
           <p className="empty-title">No Submissions Recorded Yet</p>
           <p className="empty-subtitle">
             You haven't submitted any coursework solutions yet.
           </p>
-          <Link to="/student/assignments" className="btn-primary mt-4">
-            Browse Available Assignments →
+          <Link to="/student/assignments" className="btn-primary mt-4" style={{ width: 'auto' }}>
+            <FolderSimple size={16} weight="bold" />
+            <span>Browse Available Assignments</span>
           </Link>
         </div>
       ) : (
@@ -73,7 +102,7 @@ export default function StudentSubmissions() {
                     <h3 className="submission-title">{sub.assignment_title}</h3>
                     <div className="submission-submeta">
                       <span>
-                        ⏰ Submitted on:{' '}
+                        Submitted:{' '}
                         {new Date(sub.submitted_at).toLocaleString(undefined, {
                           dateStyle: 'medium',
                           timeStyle: 'short',
@@ -95,22 +124,22 @@ export default function StudentSubmissions() {
                   </span>
                 </div>
 
-                <div className="submission-card-body">
+                <div className="submission-card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {/* File Artifact Row */}
                   <div className="detail-row">
                     <span className="label">Submitted Artifact:</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        downloadSubmissionFile(
-                          token,
-                          sub.id,
-                          `${sub.assignment_title || 'assignment'}_solution`
-                        )
-                      }
+                      onClick={() => handleDownload(sub)}
                       className="btn-secure-download"
+                      disabled={downloadingId === sub.id}
                     >
-                      🔒 Download Solution Artifact
+                      {downloadingId === sub.id ? (
+                        <CircleNotch size={14} className="animate-spin" />
+                      ) : (
+                        <DownloadSimple size={14} weight="bold" />
+                      )}
+                      <span>Download Solution Artifact</span>
                     </button>
                   </div>
 
@@ -124,13 +153,15 @@ export default function StudentSubmissions() {
 
                   {/* Feedback Panel */}
                   <div className="feedback-section">
-                    <span className="label">Instructor Feedback:</span>
-                    <div className={`feedback-box ${hasFeedback ? 'has-text' : 'empty'}`}>
+                    <span className="label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Instructor Feedback
+                    </span>
+                    <div className="prompt-box" style={{ marginTop: '0.4rem' }}>
                       {hasFeedback ? (
-                        <p>{sub.feedback}</p>
+                        <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>{sub.feedback}</p>
                       ) : (
-                        <p className="italic">
-                          No feedback has been published by the evaluator yet.
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          No instructor remarks published yet.
                         </p>
                       )}
                     </div>

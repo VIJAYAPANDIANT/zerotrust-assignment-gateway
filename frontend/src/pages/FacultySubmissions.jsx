@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  UploadSimple,
+  ArrowsClockwise,
+  MagnifyingGlass,
+  CheckCircle,
+  Hourglass,
+  ArrowRight,
+  CircleNotch,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { getFacultySubmissions } from '../services/api';
 
@@ -8,7 +17,7 @@ export default function FacultySubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'graded'
+  const [filter, setFilter] = useState('all');
 
   const fetchSubmissions = async () => {
     if (!token) return;
@@ -39,13 +48,17 @@ export default function FacultySubmissions() {
       {/* Header */}
       <div className="section-header">
         <div>
-          <h2>Student Coursework Submissions 📥</h2>
+          <h2>
+            <UploadSimple size={28} weight="duotone" color="#fbbf24" />
+            <span>Student Coursework Submissions</span>
+          </h2>
           <p className="welcome-sub">
             Review student artifacts, examine integrity, and record evaluation grades.
           </p>
         </div>
         <button onClick={fetchSubmissions} className="btn-refresh">
-          🔄 Refresh
+          <ArrowsClockwise size={16} weight="bold" />
+          <span>Refresh List</span>
         </button>
       </div>
 
@@ -61,7 +74,7 @@ export default function FacultySubmissions() {
           className={`filter-btn ${filter === 'pending' ? 'active' : ''}`}
           onClick={() => setFilter('pending')}
         >
-          Pending Grading ({submissions.filter((s) => s.marks === null).length})
+          Pending Evaluation ({submissions.filter((s) => s.marks === null).length})
         </button>
         <button
           className={`filter-btn ${filter === 'graded' ? 'active' : ''}`}
@@ -75,12 +88,12 @@ export default function FacultySubmissions() {
 
       {loading ? (
         <div className="loading-card">
-          <div className="spinner"></div>
+          <CircleNotch size={32} className="animate-spin" color="#38bdf8" />
           <p>Retrieving student submissions from gateway...</p>
         </div>
       ) : filteredSubmissions.length === 0 ? (
         <div className="card empty-state-box">
-          <span className="empty-icon" aria-hidden="true">🔍</span>
+          <MagnifyingGlass size={40} weight="duotone" className="empty-icon" />
           <p className="empty-title">No Submissions Found</p>
           <p className="empty-subtitle">
             {filter === 'all'
@@ -90,7 +103,7 @@ export default function FacultySubmissions() {
         </div>
       ) : (
         <div className="card">
-          <div className="faculty-table-wrapper">
+          <div className="table-responsive">
             <table className="faculty-table">
               <thead>
                 <tr>
@@ -107,21 +120,20 @@ export default function FacultySubmissions() {
                   <tr key={sub.id}>
                     <td>
                       <div className="font-bold">{sub.student_name}</div>
-                      <div className="sub-text">{sub.student_email}</div>
+                      <div className="sub-text font-mono">{sub.student_email}</div>
                     </td>
                     <td>
                       <div className="font-medium">{sub.assignment_title}</div>
                       {sub.assignment_deadline && (
-                        <div className="sub-text">
+                        <div className="sub-text font-mono">
                           Due: {new Date(sub.assignment_deadline).toLocaleDateString()}
                         </div>
                       )}
                     </td>
                     <td>
-                      {new Date(sub.submitted_at).toLocaleString(undefined, {
-                        dateStyle: 'short',
-                        timeStyle: 'short',
-                      })}
+                      <span className="timestamp" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {new Date(sub.submitted_at).toLocaleDateString()} {new Date(sub.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </td>
                     <td>
                       <span className={`status-pill status-${sub.status}`}>
@@ -140,7 +152,8 @@ export default function FacultySubmissions() {
                         to={`/faculty/submissions/${sub.id}`}
                         className="btn-table-action"
                       >
-                        Review & Grade →
+                        <span>Review & Grade</span>
+                        <ArrowRight size={13} weight="bold" />
                       </Link>
                     </td>
                   </tr>

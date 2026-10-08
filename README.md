@@ -179,7 +179,7 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
    - `user_id`: `UUID REFERENCES users(id) ON DELETE SET NULL`
    - `endpoint`: `VARCHAR(255) NOT NULL`
    - `action`: `VARCHAR(50) NOT NULL`
-   - `result`: `VARCHAR(50) NOT NULL CHECK (result IN ('success', 'failure', 'denied', 'error'))`
+   - `result`: `VARCHAR(50) NOT NULL CHECK (result IN ('ALLOW', 'BLOCK', 'FAILURE'))`
    - `ip_address`: `VARCHAR(45) NOT NULL` (captures IPv4 / IPv6 addresses)
    - `created_at`: `TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`
    - **Indexes:** `idx_access_logs_user_id`, `idx_access_logs_created_at`, `idx_access_logs_endpoint`
@@ -215,6 +215,12 @@ The relational schema is defined in [`database/schema.sql`](file:///c:/Zero%20Tr
 | `GET` | `/api/faculty/submissions` | `requireAuth` + `Faculty` | Retrieves all student submissions across courses evaluated by this faculty. |
 | `GET` | `/api/faculty/submissions/:id` | `requireAuth` + `Faculty` | Retrieves complete evaluation details for a specific student submission. |
 | `POST` | `/api/faculty/submissions/:id/grade` | `requireAuth` + `Faculty` | Evaluates a student submission, assigning marks (0-100) and instructor feedback remarks. |
+
+### Administrative & Security Auditing Endpoints
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/security/logs` | `requireAuth` + `Admin` (Dev enabled) | Retrieves system audit logs and computed KPI metrics (Total Requests, Allowed, Blocked, Auth Failures). |
 
 ### JWT Specification
 Tokens are signed with `JWT_SECRET` using HMAC-SHA256:
@@ -315,18 +321,57 @@ When a student queries or downloads an assignment submission:
 
 ---
 
-## 10. Repository Structure
+## 10. Application-Level Security & Access Logging (Security Dashboard)
+
+The application implements immutable, granular security logging for every sensitive operation on the origin server. These logs record all access evaluations directly within the PostgreSQL `access_logs` table.
+
+> [!NOTE]
+> These are **application-level security audit logs** captured by Express.js middleware and controllers on the origin server. They are distinct from edge-level Cloudflare Access / Cloudflare Tunnel logs (which will be integrated in subsequent phases).
+
+### Audited Actions & Decision Results
+
+Every entry in `access_logs` records:
+- `user_id`: UUID of the authenticated actor (`NULL` for unauthenticated or failed identity attempts)
+- `endpoint`: Target HTTP path requested (e.g., `/api/auth/login`, `/api/submissions`)
+- `action`: Specific operation performed
+- `result`: Strict decision classification — `ALLOW`, `BLOCK`, or `FAILURE`
+- `ip_address`: Client remote IP address (IPv4 / IPv6)
+- `created_at`: UTC timestamp of the request
+
+| Protected Action | Result | Trigger Condition |
+| :--- | :---: | :--- |
+| `LOGIN_SUCCESS` | `ALLOW` | Valid credentials submitted; JWT generated and issued. |
+| `LOGIN_FAILURE` | `FAILURE` | Invalid username/password combination or nonexistent user. |
+| `ASSIGNMENT_UPLOAD` | `ALLOW` | Student successfully uploaded assignment artifact to storage. |
+| `SUBMISSION_ACCESS` | `ALLOW` | Authorized student accessing own work, or faculty reviewing coursework. |
+| `UNAUTHORIZED_API_ATTEMPT` | `BLOCK` | Role violation (e.g., student calling faculty API) or cross-student resource access. |
+| `UNAUTHORIZED_API_ATTEMPT` | `FAILURE` | Unauthenticated request to protected endpoint (missing/invalid token). |
+| `FACULTY_GRADING` | `ALLOW` | Faculty assigned marks and feedback remarks to student submission. |
+| `LOGOUT` | `ALLOW` | User session terminated and logged out. |
+
+### Security Dashboard (`/security/logs`)
+
+A centralized, responsive UI is provided to inspect real-time application security logs and key performance indicators:
+- **Total Requests:** Cumulative audited request volume.
+- **Allowed (`ALLOW`):** Successfully authorized operations passing Zero Trust policy checks.
+- **Blocked (`BLOCK`):** Requests intercepted and rejected due to least-privilege or ownership violations (`403 Forbidden`).
+- **Authentication Failures (`FAILURE`):** Failed logins, missing tokens, or expired sessions (`401 Unauthorized`).
+- **Interactive Activity Table:** Searchable by user, endpoint, action, and filterable by decision result (`ALLOW`, `BLOCK`, `FAILURE`).
+
+---
+
+## 11. Repository Structure
 
 ```
 ├── frontend/
 │   ├── src/
 │   │   ├── components/       # Reusable components (Navbar, ProtectedRoute)
-│   │   ├── pages/            # Views (AuthPage, StudentDashboard, FacultyDashboard)
+│   │   ├── pages/            # Views (AuthPage, StudentDashboard, FacultyDashboard, SecurityDashboard)
 │   │   ├── services/         # API fetch client (api.js)
 │   │   ├── context/          # Authentication State Context (AuthContext.jsx)
-│   │   ├── App.jsx           # Root application router
+│   │   ├── App.jsx           # Root application router (/security/logs)
 │   │   ├── main.jsx          # React DOM entry point
-│   │   └── index.css         # Baseline global styles
+│   │   └── index.css         # Baseline global styles & security badge pills
 │   ├── package.json          # Frontend dependencies and scripts
 │   └── vite.config.js        # Vite build and development configuration
 │
@@ -335,10 +380,10 @@ When a student queries or downloads an assignment submission:
 │   ├── .env.example          # Environment template
 │   ├── src/
 │   │   ├── config/           # Database (db.js), Environment, CORS
-│   │   ├── controllers/      # auth.controller.js, health.controller.js
-│   │   ├── middleware/       # auth.middleware.js, errorHandler.js
-│   │   ├── models/           # user.model.js, audit.model.js
-│   │   ├── routes/           # auth.routes.js, health.routes.js, index.js
+│   │   ├── controllers/      # auth, assignment, faculty, submission, security controllers
+│   │   ├── middleware/       # auth.middleware.js, role.middleware.js, upload.js, errorHandler.js
+│   │   ├── models/           # user.model.js, assignment.model.js, submission.model.js, audit.model.js
+│   │   ├── routes/           # auth, assignment, faculty, submission, security routes, index.js
 │   │   └── server.js         # Express HTTP listener and graceful shutdown
 │   └── package.json          # Backend dependencies and scripts
 │
@@ -354,7 +399,7 @@ When a student queries or downloads an assignment submission:
 
 ---
 
-## 11. Getting Started
+## 12. Getting Started
 
 ### Prerequisites
 - Node.js (v18.0.0 or higher, LTS recommended)

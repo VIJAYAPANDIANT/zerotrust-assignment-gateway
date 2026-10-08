@@ -43,8 +43,8 @@ export const register = async (req, res, next) => {
     if (normalizedRole === 'admin') {
       await AuditModel.logAccess({
         endpoint: '/api/auth/register',
-        action: 'REGISTER_ADMIN_ATTEMPT',
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'BLOCK',
         ipAddress: req.ip,
       });
 
@@ -152,12 +152,13 @@ export const login = async (req, res, next) => {
       await AuditModel.logAccess({
         endpoint: '/api/auth/login',
         action: 'LOGIN_FAILURE',
-        result: 'failure',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
       return res.status(401).json({
         success: false,
+        error: 'Unauthorized',
         message: 'Invalid email or password.',
       });
     }
@@ -168,13 +169,14 @@ export const login = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: user.id,
         endpoint: '/api/auth/login',
-        action: 'LOGIN_INVALID_PASSWORD',
-        result: 'failure',
+        action: 'LOGIN_FAILURE',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
       return res.status(401).json({
         success: false,
+        error: 'Unauthorized',
         message: 'Invalid email or password.',
       });
     }
@@ -187,7 +189,7 @@ export const login = async (req, res, next) => {
       userId: user.id,
       endpoint: '/api/auth/login',
       action: 'LOGIN_SUCCESS',
-      result: 'success',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -216,15 +218,27 @@ export const login = async (req, res, next) => {
  */
 export const logout = async (req, res, next) => {
   try {
-    if (req.user) {
-      await AuditModel.logAccess({
-        userId: req.user.id,
-        endpoint: '/api/auth/logout',
-        action: 'LOGOUT',
-        result: 'success',
-        ipAddress: req.ip,
-      });
+    let userId = req.user?.id || null;
+
+    if (!userId && req.headers?.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      try {
+        const token = req.headers.authorization.split(' ')[1].trim();
+        const decoded = jwt.verify(token, config.jwtSecret);
+        if (decoded?.id) {
+          userId = decoded.id;
+        }
+      } catch {
+        // Token may be invalid or expired, continue logging logout
+      }
     }
+
+    await AuditModel.logAccess({
+      userId,
+      endpoint: '/api/auth/logout',
+      action: 'LOGOUT',
+      result: 'ALLOW',
+      ipAddress: req.ip,
+    });
 
     return res.status(200).json({
       success: true,

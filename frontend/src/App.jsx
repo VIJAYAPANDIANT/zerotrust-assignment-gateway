@@ -9,6 +9,7 @@ import FacultyDashboard from './pages/FacultyDashboard';
 import FacultyAssignments from './pages/FacultyAssignments';
 import FacultySubmissions from './pages/FacultySubmissions';
 import FacultySubmissionDetail from './pages/FacultySubmissionDetail';
+import SecurityDashboard from './pages/SecurityDashboard';
 
 // Protected Route wrapper enforcing student role
 function StudentRoute({ children }) {
@@ -23,11 +24,7 @@ function StudentRoute({ children }) {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
-
-  if (user.role !== 'student') {
+  if (!user || user.role !== 'student') {
     return <Navigate to="/" replace />;
   }
 
@@ -47,11 +44,27 @@ function FacultyRoute({ children }) {
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== 'faculty') {
     return <Navigate to="/" replace />;
   }
 
-  if (user.role !== 'faculty') {
+  return children;
+}
+
+// Protected Route wrapper for authenticated users (Admin / Dev testing)
+function AuthenticatedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Verifying Zero Trust session credentials...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/" replace />;
   }
 
@@ -83,6 +96,8 @@ function AppContent() {
                 <AuthPage />
               ) : user.role === 'student' ? (
                 <Navigate to="/student/dashboard" replace />
+              ) : user.role === 'admin' ? (
+                <Navigate to="/security/logs" replace />
               ) : (
                 <Navigate to="/faculty/dashboard" replace />
               )
@@ -147,6 +162,20 @@ function AppContent() {
                 <FacultySubmissionDetail />
               </FacultyRoute>
             }
+          />
+
+          {/* Security & Access Audit Dashboard (Admin / Dev testing) */}
+          <Route
+            path="/security/logs"
+            element={
+              <AuthenticatedRoute>
+                <SecurityDashboard />
+              </AuthenticatedRoute>
+            }
+          />
+          <Route
+            path="/security"
+            element={<Navigate to="/security/logs" replace />}
           />
 
           {/* Fallback */}

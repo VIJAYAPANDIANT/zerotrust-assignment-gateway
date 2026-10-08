@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS access_logs (
     CONSTRAINT fk_access_logs_user FOREIGN KEY (user_id)
         REFERENCES users(id) ON DELETE SET NULL,
 
-    -- Result constraint
-    CONSTRAINT chk_access_log_result CHECK (result IN ('success', 'failure', 'denied', 'error'))
+    -- Result constraint: supports ALLOW, BLOCK, and FAILURE for Zero Trust evaluation
+    CONSTRAINT chk_access_log_result CHECK (result IN ('ALLOW', 'BLOCK', 'FAILURE', 'success', 'failure', 'denied', 'error'))
 );
 
 -- Comments for access_logs table

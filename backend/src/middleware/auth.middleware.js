@@ -27,8 +27,8 @@ export const requireAuth = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: null,
         endpoint: req.originalUrl,
-        action: 'ACCESS',
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
@@ -46,8 +46,8 @@ export const requireAuth = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: null,
         endpoint: req.originalUrl,
-        action: 'ACCESS',
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 

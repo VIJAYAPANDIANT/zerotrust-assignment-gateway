@@ -283,3 +283,18 @@ export async function getAdminLogs(token) {
   });
   return handleResponse(response);
 }
+
+// -----------------------------------------------------------------------------
+// Security Audit Logs Endpoints
+// -----------------------------------------------------------------------------
+
+export async function getSecurityLogs(token, limit = 100) {
+  const response = await fetch(`${API_BASE_URL}/security/logs?limit=${limit}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}

@@ -31,8 +31,8 @@ export const getAssignments = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: req.user?.id || null,
       endpoint: '/api/assignments',
-      action: 'VIEW_ASSIGNMENTS_LIST',
-      result: 'success',
+      action: 'VIEW_ASSIGNMENTS',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -58,13 +58,14 @@ export const getAssignmentById = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: req.user?.id || null,
         endpoint: `/api/assignments/${id}`,
-        action: 'VIEW_ASSIGNMENT_NOT_FOUND',
-        result: 'failure',
+        action: 'VIEW_ASSIGNMENT',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
       return res.status(404).json({
         success: false,
+        error: 'Not Found',
         message: 'Assignment not found.',
       });
     }
@@ -83,8 +84,8 @@ export const getAssignmentById = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: req.user?.id || null,
       endpoint: `/api/assignments/${id}`,
-      action: 'VIEW_ASSIGNMENT_DETAILS',
-      result: 'success',
+      action: 'VIEW_ASSIGNMENT',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -108,6 +109,7 @@ export const createAssignment = async (req, res, next) => {
     if (!title || !deadline) {
       return res.status(400).json({
         success: false,
+        error: 'Bad Request',
         message: 'Assignment title and deadline are required.',
       });
     }
@@ -116,6 +118,7 @@ export const createAssignment = async (req, res, next) => {
     if (isNaN(parsedDeadline.getTime())) {
       return res.status(400).json({
         success: false,
+        error: 'Bad Request',
         message: 'Invalid deadline format. Please provide a valid date.',
       });
     }
@@ -131,7 +134,7 @@ export const createAssignment = async (req, res, next) => {
       userId: req.user.id,
       endpoint: '/api/assignments',
       action: 'CREATE_ASSIGNMENT',
-      result: 'success',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 

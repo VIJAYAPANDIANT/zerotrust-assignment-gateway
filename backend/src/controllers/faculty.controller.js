@@ -40,8 +40,8 @@ export const getFacultySubmissions = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: facultyId,
       endpoint: '/api/faculty/submissions',
-      action: 'FACULTY_VIEW_SUBMISSIONS',
-      result: 'success',
+      action: 'SUBMISSION_ACCESS',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -67,13 +67,14 @@ export const getFacultySubmissionById = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: req.user.id,
         endpoint: `/api/faculty/submissions/${id}`,
-        action: 'FACULTY_SUBMISSION_NOT_FOUND',
-        result: 'failure',
+        action: 'SUBMISSION_ACCESS',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
       return res.status(404).json({
         success: false,
+        error: 'Not Found',
         message: 'Submission not found.',
       });
     }
@@ -81,8 +82,8 @@ export const getFacultySubmissionById = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: req.user.id,
       endpoint: `/api/faculty/submissions/${id}`,
-      action: 'FACULTY_VIEW_SUBMISSION_DETAIL',
-      result: 'success',
+      action: 'SUBMISSION_ACCESS',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -107,6 +108,7 @@ export const gradeSubmission = async (req, res, next) => {
     if (marks === undefined || marks === null || isNaN(marks)) {
       return res.status(400).json({
         success: false,
+        error: 'Bad Request',
         message: 'A valid numeric marks score is required.',
       });
     }
@@ -115,6 +117,7 @@ export const gradeSubmission = async (req, res, next) => {
     if (numericMarks < 0 || numericMarks > 100) {
       return res.status(400).json({
         success: false,
+        error: 'Bad Request',
         message: 'Marks must be a value between 0 and 100.',
       });
     }
@@ -128,6 +131,7 @@ export const gradeSubmission = async (req, res, next) => {
     if (!updated) {
       return res.status(404).json({
         success: false,
+        error: 'Not Found',
         message: 'Submission not found to evaluate.',
       });
     }
@@ -135,8 +139,8 @@ export const gradeSubmission = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: req.user.id,
       endpoint: `/api/faculty/submissions/${id}/grade`,
-      action: 'FACULTY_GRADE_SUBMISSION',
-      result: 'success',
+      action: 'FACULTY_GRADING',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 

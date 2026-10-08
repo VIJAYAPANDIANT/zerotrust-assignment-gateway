@@ -15,8 +15,8 @@ export const getMySubmissions = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: studentId,
       endpoint: '/api/submissions/my',
-      action: 'VIEW_MY_SUBMISSIONS',
-      result: 'success',
+      action: 'SUBMISSION_ACCESS',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -46,8 +46,8 @@ export const getSubmissionById = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: user.id,
         endpoint: `/api/submissions/${id}`,
-        action: 'SUBMISSION_NOT_FOUND',
-        result: 'failure',
+        action: 'SUBMISSION_ACCESS',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
@@ -63,8 +63,8 @@ export const getSubmissionById = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: user.id,
         endpoint: `/api/submissions/${id}`,
-        action: 'UNAUTHORIZED_CROSS_STUDENT_SUBMISSION_ACCESS_BLOCKED',
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'BLOCK',
         ipAddress: req.ip,
       });
 
@@ -78,8 +78,8 @@ export const getSubmissionById = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: user.id,
       endpoint: `/api/submissions/${id}`,
-      action: 'VIEW_SUBMISSION_DETAIL',
-      result: 'success',
+      action: 'SUBMISSION_ACCESS',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -154,12 +154,12 @@ export const submitAssignment = async (req, res, next) => {
       fileUrl,
     });
 
-    // 4. Create an access log entry
+    // 4. Create an access log entry for assignment upload
     await AuditModel.logAccess({
       userId: studentId,
       endpoint: '/api/submissions',
-      action: 'SUBMIT_ASSIGNMENT_STORAGE_UPLOAD',
-      result: 'success',
+      action: 'ASSIGNMENT_UPLOAD',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -195,8 +195,8 @@ export const getSubmissionFile = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: user.id,
         endpoint: `/api/submissions/${id}/file`,
-        action: 'RETRIEVE_SUBMISSION_FILE_NOT_FOUND',
-        result: 'failure',
+        action: 'SUBMISSION_ACCESS',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
@@ -212,8 +212,8 @@ export const getSubmissionFile = async (req, res, next) => {
       await AuditModel.logAccess({
         userId: user.id,
         endpoint: `/api/submissions/${id}/file`,
-        action: 'UNAUTHORIZED_CROSS_STUDENT_FILE_ACCESS_BLOCKED',
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'BLOCK',
         ipAddress: req.ip,
       });
 
@@ -228,8 +228,8 @@ export const getSubmissionFile = async (req, res, next) => {
     await AuditModel.logAccess({
       userId: user.id,
       endpoint: `/api/submissions/${id}/file`,
-      action: 'RETRIEVE_SUBMISSION_FILE_AUTHORIZED',
-      result: 'success',
+      action: 'SUBMISSION_ACCESS',
+      result: 'ALLOW',
       ipAddress: req.ip,
     });
 
@@ -250,6 +250,7 @@ export const getSubmissionFile = async (req, res, next) => {
       return res.redirect(access.url);
     } else if (access.type === 'local_file') {
       if (req.query.format === 'json') {
+        // Return relative stream endpoint with token
         return res.status(200).json({
           success: true,
           download_url: `/api/submissions/${id}/file?download=true`,

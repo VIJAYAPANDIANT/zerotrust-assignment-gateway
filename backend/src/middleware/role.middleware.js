@@ -22,8 +22,8 @@ export const requireRole = (...roles) => {
       await AuditModel.logAccess({
         userId: null,
         endpoint: req.originalUrl,
-        action: 'ACCESS_DENIED_UNAUTHENTICATED',
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'FAILURE',
         ipAddress: req.ip,
       });
 
@@ -39,8 +39,8 @@ export const requireRole = (...roles) => {
       await AuditModel.logAccess({
         userId: req.user.id,
         endpoint: req.originalUrl,
-        action: `ACCESS_DENIED_ROLE_${req.user.role?.toUpperCase()}`,
-        result: 'denied',
+        action: 'UNAUTHORIZED_API_ATTEMPT',
+        result: 'BLOCK',
         ipAddress: req.ip,
       });
 

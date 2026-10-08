@@ -9,7 +9,16 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-brand-section">
-        <Link to={user.role === 'student' ? '/student/dashboard' : '/'} className="navbar-brand">
+        <Link
+          to={
+            user.role === 'student'
+              ? '/student/dashboard'
+              : user.role === 'admin'
+              ? '/security/logs'
+              : '/faculty/dashboard'
+          }
+          className="navbar-brand"
+        >
           <span className="brand-shield">🛡️</span>
           <div>
             <h2 className="brand-title">ZeroTrust Gateway</h2>
@@ -38,6 +47,12 @@ export default function Navbar() {
             >
               My Submissions
             </NavLink>
+            <NavLink
+              to="/security/logs"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              🛡️ Security Logs
+            </NavLink>
           </nav>
         )}
 
@@ -61,6 +76,24 @@ export default function Navbar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
               Student Submissions
+            </NavLink>
+            <NavLink
+              to="/security/logs"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              🛡️ Security Logs
+            </NavLink>
+          </nav>
+        )}
+
+        {/* Administrator Navigation Links */}
+        {user.role === 'admin' && (
+          <nav className="nav-links">
+            <NavLink
+              to="/security/logs"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              🛡️ Security Audit Logs
             </NavLink>
           </nav>
         )}

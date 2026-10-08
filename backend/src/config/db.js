@@ -343,8 +343,33 @@ function handleInMemoryQuery(text, params) {
 
   // 10. SELECT FROM access_logs
   if (/SELECT.*FROM access_logs/is.test(cleanSql)) {
-    const sorted = [...inMemoryData.access_logs].reverse().slice(0, 50);
-    return { rows: sorted };
+    // If just querying result, action for stats
+    if (/SELECT\s+result,\s*action\s+FROM/is.test(cleanSql)) {
+      return { rows: [...inMemoryData.access_logs] };
+    }
+
+    // Full query with user enrichment
+    let limit = 100;
+    if (params && params[0]) {
+      limit = parseInt(params[0], 10);
+    }
+
+    const rows = [...inMemoryData.access_logs]
+      .reverse()
+      .slice(0, limit)
+      .map((log) => {
+        const user = log.user_id
+          ? inMemoryData.users.find((u) => u.id === log.user_id)
+          : null;
+        return {
+          ...log,
+          user_name: user ? user.name : null,
+          user_email: user ? user.email : null,
+          user_role: user ? user.role : null,
+        };
+      });
+
+    return { rows };
   }
 
   return { rows: [] };

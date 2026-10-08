@@ -34,6 +34,7 @@ export const requireAuth = async (req, res, next) => {
 
       return res.status(401).json({
         success: false,
+        error: 'Unauthorized',
         message: 'Authentication required. No token provided.',
       });
     }
@@ -57,6 +58,7 @@ export const requireAuth = async (req, res, next) => {
 
       return res.status(401).json({
         success: false,
+        error: 'Unauthorized',
         message,
       });
     }
@@ -66,6 +68,7 @@ export const requireAuth = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         success: false,
+        error: 'Unauthorized',
         message: 'The user belonging to this token no longer exists.',
       });
     }

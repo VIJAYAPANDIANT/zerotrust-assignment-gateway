@@ -7,6 +7,7 @@ import { config } from '../config/environment.js';
 export const notFoundHandler = (req, res, next) => {
   res.status(404).json({
     success: false,
+    error: 'Not Found',
     message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
 };
@@ -20,6 +21,7 @@ export const errorHandler = (err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({
       success: false,
+      error: 'Bad Request',
       message: 'Malformed JSON payload provided',
     });
   }
@@ -32,6 +34,7 @@ export const errorHandler = (err, req, res, next) => {
         : `File upload error: ${err.message}`;
     return res.status(400).json({
       success: false,
+      error: 'Bad Request',
       message: msg,
     });
   }
@@ -39,11 +42,21 @@ export const errorHandler = (err, req, res, next) => {
   const statusCode = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
+  const errorNames = {
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    403: 'Forbidden',
+    404: 'Not Found',
+    409: 'Conflict',
+    500: 'Internal Server Error',
+  };
+
   // Log error details for developer diagnostics
   console.error(`[Error] ${statusCode} - ${message}`);
 
   res.status(statusCode).json({
     success: false,
+    error: err.error || errorNames[statusCode] || 'Error',
     message,
     ...(config.nodeEnv === 'development' && { stack: err.stack }),
   });

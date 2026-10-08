@@ -242,3 +242,44 @@ export async function gradeSubmission(token, id, { marks, feedback }) {
   });
   return handleResponse(response);
 }
+
+// -----------------------------------------------------------------------------
+// Submission Specific Endpoints
+// -----------------------------------------------------------------------------
+
+export async function getSubmissionById(token, id) {
+  const response = await fetch(`${API_BASE_URL}/submissions/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+// -----------------------------------------------------------------------------
+// Administrator Endpoints
+// -----------------------------------------------------------------------------
+
+export async function getAdminOverview(token) {
+  const response = await fetch(`${API_BASE_URL}/admin/overview`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function getAdminLogs(token) {
+  const response = await fetch(`${API_BASE_URL}/admin/logs`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return handleResponse(response);
+}

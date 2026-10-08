@@ -5,15 +5,15 @@ import {
   createAssignment,
 } from '../controllers/assignment.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
-import { requireFaculty } from '../middleware/role.middleware.js';
+import { requireRole } from '../middleware/role.middleware.js';
 
 const router = Router();
 
-// Protected: All authenticated users can view assignments
-router.get('/', requireAuth, getAssignments);
-router.get('/:id', requireAuth, getAssignmentById);
+// Protected: Authenticated student, faculty, and admin roles can view assignments
+router.get('/', requireAuth, requireRole('student', 'faculty', 'admin'), getAssignments);
+router.get('/:id', requireAuth, requireRole('student', 'faculty', 'admin'), getAssignmentById);
 
-// Protected: Only faculty can create assignments
-router.post('/', requireAuth, requireFaculty, createAssignment);
+// Protected: Only faculty can create assignments (Student receives 403 Forbidden)
+router.post('/', requireAuth, requireRole('faculty'), createAssignment);
 
 export default router;

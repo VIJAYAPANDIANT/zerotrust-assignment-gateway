@@ -4,6 +4,7 @@ import authRoutes from './auth.routes.js';
 import assignmentRoutes from './assignment.routes.js';
 import submissionRoutes from './submission.routes.js';
 import facultyRoutes from './faculty.routes.js';
+import adminRoutes from './admin.routes.js';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use('/auth', authRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/submissions', submissionRoutes);
 router.use('/faculty', facultyRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;

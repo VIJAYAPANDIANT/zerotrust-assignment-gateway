@@ -1,15 +1,23 @@
 import { AuditModel } from '../models/audit.model.js';
 
 /**
- * Role-Based Access Control (RBAC) Middleware
- * Enforces role restrictions at the gateway endpoint layer.
+ * Reusable Role-Based Authorization Middleware: requireRole(...roles)
  *
- * @param {string|string[]} allowedRoles - Role or array of roles permitted to access
+ * Enforces fine-grained application-level authorization.
+ *
+ * @param {...string|string[]} roles - Allowed role(s) (e.g., 'student', 'faculty', 'admin')
+ * @returns {import('express').RequestHandler}
+ *
+ * Behavior:
+ * - 401 Unauthorized: caller is not authenticated (no req.user).
+ * - 403 Forbidden: caller is authenticated but lacks required role.
  */
-export const requireRole = (allowedRoles) => {
-  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+export const requireRole = (...roles) => {
+  // Support both rest parameters requireRole('a', 'b') and array requireRole(['a', 'b'])
+  const allowedRoles = roles.flat();
 
   return async (req, res, next) => {
+    // 1. Verify user authentication context exists (401 = unauthenticated)
     if (!req.user) {
       await AuditModel.logAccess({
         userId: null,
@@ -21,22 +29,25 @@ export const requireRole = (allowedRoles) => {
 
       return res.status(401).json({
         success: false,
-        message: 'Authentication required. No user context found.',
+        error: 'Unauthorized',
+        message: 'Authentication required. Please authenticate to access this resource.',
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // 2. Verify caller role is permitted (403 = authenticated but unauthorized)
+    if (!allowedRoles.includes(req.user.role)) {
       await AuditModel.logAccess({
         userId: req.user.id,
         endpoint: req.originalUrl,
-        action: `ACCESS_DENIED_${req.user.role.toUpperCase()}`,
+        action: `ACCESS_DENIED_ROLE_${req.user.role?.toUpperCase()}`,
         result: 'denied',
         ipAddress: req.ip,
       });
 
       return res.status(403).json({
         success: false,
-        message: `Forbidden. Access restricted to [${roles.join(', ')}] role(s). Current role: "${req.user.role}".`,
+        error: 'Forbidden',
+        message: `Forbidden: Access requires [${allowedRoles.join(', ')}] role. Current role: '${req.user.role}'.`,
       });
     }
 
@@ -44,6 +55,7 @@ export const requireRole = (allowedRoles) => {
   };
 };
 
-// Convenience shorthands
+// Convenience shorthand middlewares
 export const requireStudent = requireRole('student');
 export const requireFaculty = requireRole('faculty');
+export const requireAdmin = requireRole('admin');

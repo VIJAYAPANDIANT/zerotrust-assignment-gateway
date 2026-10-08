@@ -40,9 +40,19 @@ const defaultAssignments = [
   },
 ];
 
+// Pre-seed an administrative user for testing and bootstrap
+const defaultAdminUser = {
+  id: 'admin-00000000-0000-4000-8000-000000000000',
+  name: 'Security Administrator',
+  email: 'admin@zerotrust.local',
+  password: '$2b$10$BmMEIqTWVIWRU1tYBYP1du4.GMZwdqB5MBGFjVwCQ7VTkPNwuUQSe',
+  role: 'admin',
+  created_at: '2026-10-01T00:00:00.000Z',
+};
+
 // In-memory development repository for fallback testing
 export const inMemoryData = {
-  users: [],
+  users: [{ ...defaultAdminUser }],
   assignments: [...defaultAssignments],
   submissions: [],
   access_logs: [],
@@ -329,6 +339,12 @@ function handleInMemoryQuery(text, params) {
     };
     inMemoryData.access_logs.push(record);
     return { rows: [record] };
+  }
+
+  // 10. SELECT FROM access_logs
+  if (/SELECT.*FROM access_logs/is.test(cleanSql)) {
+    const sorted = [...inMemoryData.access_logs].reverse().slice(0, 50);
+    return { rows: sorted };
   }
 
   return { rows: [] };

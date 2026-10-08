@@ -97,15 +97,16 @@ The **ZeroTrust Assignment Submission Gateway** redesigns academic submission pi
 ## 4. Development Stages
 
 | Stage | Focus Area | Description | Status |
-| :---: | :--- | :--- | :---: |
+| :---: | :--- | :--- | :--- |
 | **Phase 1** | **Foundational Architecture** | Baseline repository structure, React + Vite frontend, Express API server, and `/api/health` validation. | **Complete** |
 | **Phase 2** | **Backend Modularization & DB Schema** | Clean Express architecture, environment handling, CORS, and Supabase PostgreSQL schema (`users`, `assignments`, `submissions`, `access_logs`). | **Complete** |
 | **Phase 3** | **Application Authentication** | Registration, login, bcrypt password hashing, JWT assertion tokens, `requireAuth` middleware, and role dashboards. | **Complete** |
 | **Phase 4** | **Student Dashboard & Submissions** | Assignment browsing, assignment details, multipart coursework upload, student submission history, and RBAC isolation. | **Complete** |
 | **Phase 5** | **Faculty Evaluation Dashboard** | Coursework authoring, student submission grading, marks assignment, and evaluator feedback workflows. | **Complete** |
 | **Phase 6** | **Supabase Storage & Zero Trust File Access** | Private bucket (`assignments`), PDF/DOC/DOCX validation, 15MB size limits, student isolation, signed URLs, and audit logging. | **Complete** |
-| **Phase 7** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
-| **Phase 8** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
+| **Phase 7** | **Application-Level Authorization & Ownership** | Reusable `requireRole(...roles)` middleware, strict ownership checks, Student/Faculty/Admin boundaries, and 401/403 standardization. | **Complete** |
+| **Phase 8** | **Cloudflare Zero Trust Setup** | Deploy `cloudflared` tunnel, configure Cloudflare Access policies, and implement backend JWT assertion verification middleware. | *Upcoming* |
+| **Phase 9** | **Security Auditing & Evaluation** | Penetration testing, attack vector simulation (direct IP bypass, token replay), and comparative academic evaluation. | *Upcoming* |
 
 ---
 
@@ -274,7 +275,47 @@ Student coursework artifacts are stored in a private **Supabase Storage** bucket
 
 ---
 
-## 9. Repository Structure
+## 9. Application-Level Authorization & Ownership Control
+
+To ensure deep defense-in-depth, the gateway enforces strict application-level authorization and continuous least-privilege verification prior to edge Cloudflare tunnel integration.
+
+### Core Architecture & Reusable Middleware: `requireRole(...roles)`
+
+```javascript
+// Reusable role-based authorization middleware
+requireRole("student")
+requireRole("faculty")
+requireRole("admin")
+requireRole("student", "faculty") // Multi-role support
+```
+
+### Authorization Matrix
+
+| User Role | View Assignments | Submit Coursework | View Own Submissions | Access Faculty APIs | Access Admin APIs | Inspect Another Student's Work |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Student** |  ALLOWED |  ALLOWED |  ALLOWED | ⛔ **403 Forbidden** | ⛔ **403 Forbidden** | ⛔ **403 Forbidden** |
+| **Faculty** |  ALLOWED | ⛔ **403 Forbidden** | N/A |  ALLOWED (Create/Grade) | ⛔ **403 Forbidden** |  ALLOWED (Evaluation only) |
+| **Admin** |  ALLOWED | N/A | N/A | N/A |  ALLOWED (Audit & System) |  ALLOWED (Auditing) |
+| **Unauthenticated** | ⛔ **401 Unauthorized** | ⛔ **401 Unauthorized** | ⛔ **401 Unauthorized** | ⛔ **401 Unauthorized** | ⛔ **401 Unauthorized** | ⛔ **401 Unauthorized** |
+
+### Fine-Grained Ownership Checks
+
+When a student queries or downloads an assignment submission:
+- **Rule:** `submission.student_id === req.user.id`
+- **Violation:** Student A requests Student B's submission (`GET /api/submissions/:idB` or `GET /api/submissions/:idB/file`).
+- **Response:**
+  ```json
+  {
+    "success": false,
+    "error": "Forbidden",
+    "message": "Forbidden: You do not have permission to access another student's submission."
+  }
+  ```
+- **Audit Logging:** Every authorization decision and violation attempt is persistently recorded in the `access_logs` PostgreSQL table.
+
+---
+
+## 10. Repository Structure
 
 ```
 ├── frontend/
@@ -313,7 +354,7 @@ Student coursework artifacts are stored in a private **Supabase Storage** bucket
 
 ---
 
-## 10. Getting Started
+## 11. Getting Started
 
 ### Prerequisites
 - Node.js (v18.0.0 or higher, LTS recommended)

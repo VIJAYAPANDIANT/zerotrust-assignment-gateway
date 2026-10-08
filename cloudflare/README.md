@@ -1,225 +1,243 @@
-# Cloudflare Zero Trust Architecture & Tunnel Deployment Guide
+# Cloudflare Zero Trust Architecture & Access Configuration Guide
 
-This documentation details the production security architecture and manual deployment workflow for exposing the **ZeroTrust Assignment Submission Gateway** through **Cloudflare Tunnel** and **Cloudflare Access**.
+This documentation details the production security architecture and configuration workflow for the **ZeroTrust Assignment Submission Gateway** using **Cloudflare Tunnel** and **Cloudflare Access**.
 
 ---
 
-## 1. Architectural Overview & Request Flow
+## 1. Research Project Goal: Continuous Verification
 
-The Node.js Express backend (running locally on port `5000`) is never exposed directly to the public internet. Instead, it relies on an outbound-only encrypted tunnel established by the `cloudflared` daemon to Cloudflare's global edge network.
+> **Core Axiom:** *Never trust, always verify. Every request must be cryptographically and contextually verified before access is granted.*
 
-### Complete End-to-End Traffic Flow
+To achieve true Zero Trust security, this gateway employs a **two-tier defense-in-depth model**:
+1. **Tier 1 (Outer Perimeter): Cloudflare Access** enforces identity verification, edge policy evaluation, and device/domain constraints before traffic reaches the host.
+2. **Tier 2 (Inner Origin): Node.js Express Backend** enforces fine-grained role-based authorization (RBAC), object ownership boundaries, and tamper-evident access logging.
 
 ```
 Internet (Student / Faculty Client)
        │
        ▼
 Cloudflare Edge Network
-       │  (DDoS Mitigation, Global Anycast DNS, TLS Termination)
+       │  (DDoS Mitigation, Global Anycast DNS, TLS 1.3 Termination)
        ▼
-Cloudflare Access
-       │  (Identity Verification, SSO / IdP Authentication, Device Posture)
+Cloudflare Access (Outer Perimeter Gate)
+       │  (Identity Verification, IdP / SSO / OTP, Policy Evaluation)
        ▼
-Access Policy Evaluation
-       │  (RBAC Rules, Institutional Email Restrictions: @univ.edu)
-       ▼
-Cloudflare Tunnel (cloudflared daemon)
-       │  (Encrypted Outbound-Only QUIC/HTTP2 Tunnel — No Inbound Open Ports)
-       ▼
-Node.js Express Backend (http://localhost:5000)
-       │  (Application Authentication, Role Authorization, Access Logging)
-       ▼
-Supabase Infrastructure
-       ├── PostgreSQL (Database & Row-Level Security)
-       └── Storage Bucket (Encrypted Assignment Artifacts)
+Access Policy Decision:
+       ├── Unauthenticated User       ──► [ BLOCK at Edge ]
+       ├── Unauthorized Identity      ──► [ BLOCK at Edge ]
+       └── Authorized Student/Faculty ──► [ ALLOW + Inject Cf-Access Headers ]
+                                                   │
+                                                   ▼
+       ┌───────────────────────────────────────────┴──────────────────────┐
+       │ Cloudflare Tunnel (cloudflared daemon)                           │
+       │ Encrypted Outbound-Only QUIC/HTTP2 Tunnel (No Inbound Open Ports)│
+       └───────────────────────────────────────────┬──────────────────────┘
+                                                   │
+                                                   ▼
+Node.js Express Backend (Inner Origin Gate: http://localhost:5000)
+       │
+       ├── 1. Edge Header Verification (Cf-Access-Jwt-Assertion validation)
+       ├── 2. Application Authentication (requireAuth: JWT Signature & Expiry)
+       ├── 3. Fine-Grained Authorization (requireRole: student vs. faculty vs. admin)
+       ├── 4. Object Ownership Verification:
+       │      ├── Student -> Own Submission                ──► [ ALLOW ]
+       │      ├── Student -> Another Student's Submission  ──► [ BLOCK (403) ]
+       │      ├── Student -> Faculty Endpoint              ──► [ BLOCK (403) ]
+       │      └── Faculty -> Submissions & Grading         ──► [ ALLOW ]
+       │
+       └── 5. Tamper-Evident Access Logging (access_logs: ALLOW, BLOCK, FAILURE)
+                                                   │
+                                                   ▼
+Supabase Managed Infrastructure
+       ├── PostgreSQL Database (Users, Coursework, Submissions, Access Logs)
+       └── Supabase Storage Bucket (Private Encrypted Assignment Binaries)
 ```
 
 ---
 
-## 2. Core Security Pillars
+## 2. Policy Enforcement Matrix: Separation of Responsibilities
 
-### A. Zero Inbound Exposure
-- **No Open Ports:** The local server firewall blocks all incoming WAN traffic on port `5000`. The server requires no public IP address, port forwarding, or NAT traversal.
-- **Outbound-Only Tunnel:** The `cloudflared` daemon opens persistent, encrypted outbound connections (over port `7844` via QUIC / HTTP/2) to Cloudflare Anycast edge servers.
+A common anti-pattern in edge deployments is either trusting the network or stripping authorization logic from the origin application. In this architecture, both layers collaborate:
 
-### B. Identity-Driven Edge Boundary (Cloudflare Access)
-- Every incoming HTTP request must first authenticate at the Cloudflare edge before a TCP connection or byte stream reaches the Express origin.
-- Cloudflare Access evaluates identity providers (e.g. Google Workspace, Microsoft Entra ID, GitHub, or One-Time PIN) and checks policy rules.
-- Once authenticated, Cloudflare signs and forwards cryptographic JWT assertion headers (`Cf-Access-Jwt-Assertion`, `Cf-Access-Authenticated-User-Email`) to the origin.
+| Request Scenario | Cloudflare Access (Edge) | Node.js Backend (Origin) | Final Result |
+| :--- | :--- | :--- | :--- |
+| **Unauthenticated User** (No identity) | **BLOCK** (Prompts IdP / OTP login) | Never reached | **BLOCKED (Edge)** |
+| **Unauthorized Identity** (e.g. `intruder@gmail.com`) | **BLOCK** (Does not match policy) | Never reached | **BLOCKED (Edge)** |
+| **Authorized Student** (valid `@univ.edu`) | **ALLOW** (Injects `Cf-Access` headers) | Validates JWT; Enforces student permissions | **ALLOWED** |
+| **Authorized Faculty** (valid `@univ.edu`) | **ALLOW** (Injects `Cf-Access` headers) | Validates JWT; Enforces faculty permissions | **ALLOWED** |
+| **Student accessing another student's file** | **ALLOW** (Valid academic user) | **BLOCK (403)**: Ownership mismatch | **BLOCKED (Origin)** |
+| **Student accessing faculty grading API** | **ALLOW** (Valid academic user) | **BLOCK (403)**: Role mismatch | **BLOCKED (Origin)** |
+| **Faculty accessing submissions & grading** | **ALLOW** (Valid academic user) | **ALLOW**: Role permitted | **ALLOWED** |
 
-### C. Automated HTTPS & Anycast DNS
-- Cloudflare automatically provisions and renews SSL/TLS certificates for the designated domain/subdomain.
-- DNS CNAME records resolve through Cloudflare's global Anycast network, mitigating DDoS and volumetric floods.
+### Why Retain JWT & RBAC in the Application?
+- **Zero Implicit Trust:** The origin server never assumes requests arriving over the tunnel are automatically authorized.
+- **Data-Level Ownership:** Cloudflare Access knows the user is a valid university member, but only the application knows whether Student *A* owns Submission *B*.
+- **Compartmentalization:** If perimeter credentials are leaked or bypassed, the application-level JWT and RBAC prevent lateral privilege escalation.
 
 ---
 
 ## 3. Zero-Secrets Commitment
 
 > [!IMPORTANT]
-> **No Secrets in Repository:** Cloudflare Account IDs, Tunnel Secrets, API Tokens, and Credentials JSON files must **never** be committed to Git.
-> - Tunnel credentials reside locally on the host machine in `~/.cloudflared/<tunnel-uuid>.json` or are injected via environment variable `TUNNEL_TOKEN`.
-> - Repository `.gitignore` rules strictly prevent accidental commits of `.env`, `*.json`, `*.pem`, or `*.key` credential files.
+> **No Credentials Stored in Git:**
+> - Cloudflare Tunnel tokens, API tokens, account secrets, and credential JSON files are **never** committed to the repository.
+> - Credentials reside exclusively on the host system in `~/.cloudflared/<tunnel-id>.json` or via environment variables (`TUNNEL_TOKEN`).
+> - The application uses template files ([`backend/.env.example`](file:///c:/Zero%20Trust/backend/.env.example) and [`frontend/.env.example`](file:///c:/Zero%20Trust/frontend/.env.example)) with strict `.gitignore` enforcement.
 
 ---
 
-## 4. Manual Cloudflare Configuration Walkthrough
+## 4. Cloudflare Access Configuration Steps (Dashboard)
 
-Follow these steps manually using the Cloudflare Dashboard and Cloudflare CLI (`cloudflared`).
+Follow these manual steps in the **Cloudflare Zero Trust Dashboard** ([one.dash.cloudflare.com](https://one.dash.cloudflare.com)):
+
+### Step 1: Create Access Groups
+Create reusable identity groups under **Access** $\rightarrow$ **Access Groups**:
+
+1. **Student Group:**
+   - **Name:** `Authorized-Students`
+   - **Criteria:**
+     - Include $\rightarrow$ Selector: *Emails ending in* $\rightarrow$ Value: `@student.univ.edu` (or `@univ.edu`)
+2. **Faculty Group:**
+   - **Name:** `Authorized-Faculty`
+   - **Criteria:**
+     - Include $\rightarrow$ Selector: *Emails ending in* $\rightarrow$ Value: `@faculty.univ.edu` (or specific email list)
+
+### Step 2: Register the Self-Hosted Application
+1. Navigate to **Access** $\rightarrow$ **Applications** $\rightarrow$ Click **Add an application**.
+2. Select **Self-hosted**.
+3. **Application Configuration:**
+   - **Application Name:** `ZeroTrust Assignment Gateway`
+   - **Application Domain:** `api.yourdomain.edu` (pointed to the Cloudflare Tunnel)
+   - **Session Duration:** `24 hours`
+   - **Identity Providers:** Select your configured IdP (Google Workspace, Microsoft Entra ID, GitHub, or One-Time PIN).
+
+### Step 3: Define Access Policies
+Add the following policies under the application's **Policies** tab:
+
+#### Policy A: Authorized Faculty Access
+- **Policy Name:** `Faculty Access Policy`
+- **Action:** `Allow`
+- **Rule Include:** *Access Group* $\rightarrow$ `Authorized-Faculty`
+
+#### Policy B: Authorized Student Access
+- **Policy Name:** `Student Access Policy`
+- **Action:** `Allow`
+- **Rule Include:** *Access Group* $\rightarrow$ `Authorized-Students`
+
+#### Default Deny Rule:
+- Cloudflare Access automatically enforces a default-deny posture. Any user who does not match Policy A or Policy B is **BLOCKED** with HTTP 403 / Access Denied.
+
+### Step 4: Configure CORS and Identity Headers
+Under **Advanced Settings**:
+- **Enable CORS:** Set allowed origins to your frontend URL (e.g. `https://gateway.yourdomain.edu`).
+- **Allowed Methods:** `GET, POST, PUT, DELETE, OPTIONS`.
+- **Allowed Headers:** `Authorization, Content-Type, Cf-Access-Jwt-Assertion`.
+- **Enable Cloudflare Identity Headers:** Ensures Cloudflare injects:
+  - `Cf-Access-Authenticated-User-Email`
+  - `Cf-Access-Jwt-Assertion`
+- Click **Save Application**.
 
 ---
 
-### Phase 1: Prerequisites
-1. A registered domain active on Cloudflare (with nameservers pointing to Cloudflare).
-2. A Cloudflare Zero Trust account (available on the Free plan).
-3. The Node.js Express backend running locally on port `5000`:
-   ```bash
-   cd backend
-   npm start
-   ```
+## 5. Connecting the Node.js Backend via Cloudflare Tunnel
 
----
-
-### Phase 2: Install and Authenticate `cloudflared` CLI
-
-#### 1. Install `cloudflared`
-- **Windows (PowerShell with Winget or Chocolatey):**
+### Step 1: Install `cloudflared` CLI
+- **Windows (PowerShell):**
   ```powershell
   winget install --id Cloudflare.cloudflared
-  # or
-  choco install cloudflared
   ```
-- **macOS (Homebrew):**
+- **macOS:**
   ```bash
   brew install cloudflare/cloudflare/cloudflared
   ```
-- **Linux (Debian/Ubuntu):**
+- **Linux:**
   ```bash
-  curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-  echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
-  sudo apt-get update && sudo apt-get install cloudflared
+  sudo apt-get install cloudflared
   ```
 
-#### 2. Authenticate CLI with your Cloudflare Account
-Run:
+### Step 2: Authenticate and Create Tunnel
 ```bash
+# 1. Login to Cloudflare account
 cloudflared tunnel login
-```
-- A browser window will open prompting you to select your domain.
-- Once selected, Cloudflare downloads an origin certificate to `~/.cloudflared/cert.pem` on your local system.
 
----
-
-### Phase 3: Create the Tunnel & Route DNS
-
-#### 1. Create the Tunnel
-Choose a descriptive tunnel name (e.g. `zerotrust-gateway`):
-```bash
+# 2. Create the tunnel
 cloudflared tunnel create zerotrust-gateway
+
+# 3. Route DNS to the tunnel
+cloudflared tunnel route dns zerotrust-gateway api.yourdomain.edu
 ```
-*Output will display a unique Tunnel UUID and generate a credentials file:*
-```
-Created tunnel zerotrust-gateway with id <TUNNEL-UUID>
-```
 
-#### 2. Route DNS to the Tunnel
-Point your chosen subdomain (e.g., `api.yourdomain.com`) to the newly created tunnel:
-```bash
-cloudflared tunnel route dns zerotrust-gateway api.yourdomain.com
-```
-*This automatically creates a CNAME DNS record in Cloudflare pointing `api.yourdomain.com` to `<TUNNEL-UUID>.cfargotunnel.com`.*
-
----
-
-### Phase 4: Configure Local Ingress Rules
-
-Create a configuration file `~/.cloudflared/config.yml` (or in your deployment directory outside version control):
-
+### Step 3: Configure Ingress Rules (`~/.cloudflared/config.yml`)
 ```yaml
-tunnel: <TUNNEL-UUID>
-credentials-file: /path/to/.cloudflared/<TUNNEL-UUID>.json
+tunnel: <YOUR-TUNNEL-UUID>
+credentials-file: C:\Users\<Username>\.cloudflared\<YOUR-TUNNEL-UUID>.json
 
 ingress:
-  # Route traffic for your API subdomain to the local Express backend on port 5000
-  - hostname: api.yourdomain.com
+  # Route traffic for your gateway API to the local Node.js server
+  - hostname: api.yourdomain.edu
     service: http://localhost:5000
     originRequest:
       connectTimeout: 30s
       noTLSVerify: false
 
-  # Fallback catch-all rule (required by cloudflared)
+  # Catch-all rule required by cloudflared
   - service: http_status:404
 ```
 
----
-
-### Phase 5: Start and Test the Tunnel
-
-#### 1. Test Run the Tunnel
+### Step 4: Run the Tunnel
 ```bash
 cloudflared tunnel run zerotrust-gateway
 ```
-*Verify console logs confirm healthy connections across multiple edge locations.*
-
-#### 2. Test Origin Reachability
-From any external browser or terminal:
-```bash
-curl -i https://api.yourdomain.com/api/health
-```
-**Expected Response:**
-```json
-{
-  "success": true,
-  "message": "ZeroTrust Assignment Gateway API is running",
-  "environment": "production",
-  "uptime": 45,
-  "timestamp": "2026-10-08T06:20:00.000Z"
-}
-```
-
-#### 3. (Optional) Run `cloudflared` as a System Service
-To run continuously in the background on startup:
-```bash
-# Windows (Run PowerShell as Administrator):
-cloudflared service install
-Start-Service cloudflared
-
-# Linux:
-sudo cloudflared service install
-sudo systemctl enable --now cloudflared
-```
 
 ---
 
-### Phase 6: Cloudflare Access Policy Configuration (Dashboard)
+## 6. Origin Verification & Node.js Middleware
 
-To secure the backend with Cloudflare Access policies:
+The Node.js backend includes the [`verifyCloudflareAccess`](file:///c:/Zero%20Trust/backend/src/middleware/cloudflareAccess.middleware.js) middleware in [`backend/src/server.js`](file:///c:/Zero%20Trust/backend/src/server.js).
 
-1. Open the **Cloudflare One / Zero Trust Dashboard** ([one.dash.cloudflare.com](https://one.dash.cloudflare.com)).
-2. Navigate to **Access** $\rightarrow$ **Applications**.
-3. Click **Add an application** $\rightarrow$ Select **Self-hosted**.
-4. Configure Application Details:
-   - **Application Name:** `ZeroTrust Assignment Gateway API`
-   - **Session Duration:** `24 Hours` (or as required by security policy)
-   - **Application Domain:** `api.yourdomain.com`
-5. Configure Policy Rules:
-   - **Policy Name:** `Academic Institutional Access`
-   - **Action:** `Allow`
-   - **Rule Criterion:**
-     - **Emails ending in:** `@univ.edu` (or your academic institution domain)
-     - *(Optional)* **Identity Provider:** Select Google Workspace, Entra ID, or One-Time PIN.
-6. Advanced Settings:
-   - **CORS Settings:** Enable CORS and specify allowed origins (e.g. `https://gateway.yourdomain.edu`).
-   - **JWT Validation:** Cloudflare Access generates signed assertions with public key validation via `https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/certs`.
-7. Click **Save application**.
+To enforce Cloudflare Access headers in production, set in `backend/.env`:
+```env
+CLOUDFLARE_ACCESS_REQUIRED=true
+CLOUDFLARE_TEAM_DOMAIN=your-team.cloudflareaccess.com
+CLOUDFLARE_AUD_KEY=your-application-aud-key
+```
+
+When enabled:
+- Requests lacking `Cf-Access-Authenticated-User-Email` or `Cf-Access-Jwt-Assertion` are immediately blocked at the origin with `403 Forbidden`.
+- Legitimate edge headers attach `req.cfAccess = { email, jwtAssertion }` for downstream audit logging and session correlation.
+- In local development mode (`CLOUDFLARE_ACCESS_REQUIRED=false`), the middleware safely allows traffic so test suites run unimpeded.
 
 ---
 
-## 5. Verification Checklist
+## 7. Verification & Testing Commands
 
-| Step | Check | Verification Command |
-| :--- | :--- | :--- |
-| 1 | Backend running on port 5000 | `curl http://localhost:5000/api/health` |
-| 2 | `cloudflared` installed & authenticated | `cloudflared --version` |
-| 3 | Tunnel created with DNS routed | `cloudflared tunnel list` |
-| 4 | HTTPS traffic proxied over tunnel | `curl https://api.yourdomain.com/api/health` |
-| 5 | Cloudflare Access policy enforces authentication | Unauthorized request prompts Access login screen or returns 302/403 |
+### Test 1: Verify Unauthenticated Edge Request is Blocked
+```bash
+curl -i https://api.yourdomain.edu/api/assignments
+```
+**Expected:** HTTP 302 Redirect to Cloudflare Access login screen, or HTTP 403 Forbidden. Request never hits the Node.js server.
+
+### Test 2: Verify Authorized Identity Passes Edge
+```bash
+curl -i https://api.yourdomain.edu/api/health \
+  -H "Cf-Access-Jwt-Assertion: <VALID-CF-JWT>"
+```
+**Expected:** HTTP 200 OK with health check telemetry.
+
+### Test 3: Verify Origin Enforces Fine-Grained Role Authorization
+```bash
+# Student attempting faculty-only route
+curl -i https://api.yourdomain.edu/api/faculty/assignments \
+  -H "Authorization: Bearer <STUDENT-JWT>" \
+  -H "Cf-Access-Jwt-Assertion: <VALID-CF-JWT>"
+```
+**Expected:** HTTP 403 Forbidden: `Access denied. Required role: faculty`. Event logged to `access_logs` with result `BLOCK`.
+
+### Test 4: Verify Origin Enforces Ownership Security
+```bash
+# Student A requesting Student B's submission
+curl -i https://api.yourdomain.edu/api/submissions/<STUDENT-B-SUBMISSION-ID> \
+  -H "Authorization: Bearer <STUDENT-A-JWT>" \
+  -H "Cf-Access-Jwt-Assertion: <VALID-CF-JWT>"
+```
+**Expected:** HTTP 403 Forbidden: `Access denied. You can only access your own submissions`. Event logged with result `BLOCK`.

@@ -5,6 +5,7 @@ import { config } from './config/environment.js';
 import { corsOptions } from './config/cors.js';
 import apiRoutes from './routes/index.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
+import { verifyCloudflareAccess } from './middleware/cloudflareAccess.middleware.js';
 
 // Initialize Express application
 const app = express();
@@ -18,7 +19,10 @@ app.use(express.json());
 // 3. Static Artifacts Directory
 app.use('/uploads', express.static(path.resolve('uploads')));
 
-// 4. API Routes
+// 4. Cloudflare Access Edge Boundary Verification
+app.use(verifyCloudflareAccess);
+
+// 5. API Routes
 app.use('/api', apiRoutes);
 
 // 5. 404 Handler for undefined routes

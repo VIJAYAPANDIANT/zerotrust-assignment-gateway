@@ -16,6 +16,9 @@ export const config = {
   supabaseUrl: process.env.SUPABASE_URL || '',
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   supabaseBucket: process.env.SUPABASE_STORAGE_BUCKET || 'assignments',
+  cloudflareAccessRequired: process.env.CLOUDFLARE_ACCESS_REQUIRED === 'true',
+  cloudflareTeamDomain: process.env.CLOUDFLARE_TEAM_DOMAIN || '',
+  cloudflareAudKey: process.env.CLOUDFLARE_AUD_KEY || '',
 };
 
 // Validate critical security secrets

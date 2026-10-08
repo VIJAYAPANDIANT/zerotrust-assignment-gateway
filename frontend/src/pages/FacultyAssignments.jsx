@@ -115,10 +115,14 @@ export default function FacultyAssignments() {
           <p>Loading course assignments...</p>
         </div>
       ) : assignments.length === 0 ? (
-        <div className="card placeholder-box">
-          <p className="placeholder-text">You haven't authored any assignments yet.</p>
+        <div className="card empty-state-box">
+          <span className="empty-icon" aria-hidden="true">📝</span>
+          <p className="empty-title">No Coursework Authored Yet</p>
+          <p className="empty-subtitle">
+            You haven't authored any assignments yet. Create your first coursework prompt for students.
+          </p>
           <button onClick={handleOpenModal} className="btn-primary mt-4">
-            Create Your First Assignment
+            ➕ Create Your First Assignment
           </button>
         </div>
       ) : (

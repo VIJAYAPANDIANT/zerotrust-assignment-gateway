@@ -153,8 +153,12 @@ export default function SecurityDashboard() {
               <p>Retrieving origin security audit logs...</p>
             </div>
           ) : filteredLogs.length === 0 ? (
-            <div className="placeholder-box" style={{ margin: '2rem' }}>
-              No access logs matching your filter criteria.
+            <div className="empty-state-box" style={{ margin: '2rem' }}>
+              <span className="empty-icon" aria-hidden="true">🛡️</span>
+              <p className="empty-title">No Access Logs Match Filter</p>
+              <p className="empty-subtitle">
+                No audited request matches the current search query or decision criteria.
+              </p>
             </div>
           ) : (
             <div className="table-responsive">

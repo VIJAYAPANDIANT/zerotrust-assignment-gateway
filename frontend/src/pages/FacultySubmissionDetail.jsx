@@ -113,8 +113,13 @@ export default function FacultySubmissionDetail() {
           <p>Loading submission details...</p>
         </div>
       ) : !submission ? (
-        <div className="card placeholder-box">
-          <p className="placeholder-text">Submission record could not be found.</p>
+        <div className="card empty-state-box">
+          <span className="empty-icon" aria-hidden="true">⚠️</span>
+          <p className="empty-title">Submission Not Found</p>
+          <p className="empty-subtitle">The requested submission record does not exist or has been removed.</p>
+          <Link to="/faculty/submissions" className="btn-primary mt-4">
+            ← Return to Submissions List
+          </Link>
         </div>
       ) : (
         <div className="grid-cards">

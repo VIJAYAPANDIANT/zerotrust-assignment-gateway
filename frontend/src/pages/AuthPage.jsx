@@ -54,14 +54,26 @@ export default function AuthPage() {
     }
   };
 
+  const fillTestCredentials = (email, password) => {
+    setIsLoginTab(true);
+    setLoginEmail(email);
+    setLoginPassword(password);
+    clearError();
+    setLocalMsg(null);
+  };
+
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
+        {/* Security Shield Header */}
         <div className="auth-header">
-          <div className="auth-icon">🛡️</div>
+          <div className="auth-shield-badge">
+            <span className="auth-icon" aria-hidden="true">🛡️</span>
+          </div>
           <h2>ZeroTrust Gateway</h2>
+          <span className="auth-tagline">Assignment Submission Platform</span>
           <p className="auth-subtitle">
-            Continuous identity verification for secure academic submissions
+            Continuous identity verification & fine-grained authorization
           </p>
         </div>
 
@@ -72,21 +84,22 @@ export default function AuthPage() {
             className={`tab-btn ${isLoginTab ? 'active' : ''}`}
             onClick={() => handleTabSwitch(true)}
           >
-            Sign In
+            🔒 Sign In
           </button>
           <button
             type="button"
             className={`tab-btn ${!isLoginTab ? 'active' : ''}`}
             onClick={() => handleTabSwitch(false)}
           >
-            Create Account
+            📝 Create Account
           </button>
         </div>
 
         {/* Alerts / Error feedback */}
         {(localMsg || error) && (
           <div className={`alert-banner ${localMsg?.type || 'error'}`}>
-            {localMsg?.text || error}
+            <span>{localMsg?.type === 'success' ? '✅' : '⚠️'}</span>
+            <span>{localMsg?.text || error}</span>
           </div>
         )}
 
@@ -94,14 +107,16 @@ export default function AuthPage() {
         {isLoginTab ? (
           <form onSubmit={handleLoginSubmit} className="auth-form">
             <div className="form-group">
-              <label htmlFor="login-email">Academic Email</label>
+              <label htmlFor="login-email">Academic Email Address</label>
               <input
                 id="login-email"
                 type="email"
                 required
+                autoComplete="email"
                 placeholder="student@univ.edu or faculty@univ.edu"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
@@ -111,14 +126,23 @@ export default function AuthPage() {
                 id="login-password"
                 type="password"
                 required
-                placeholder="Enter your password"
+                autoComplete="current-password"
+                placeholder="Enter password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
             <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting ? 'Authenticating...' : 'Sign In with Zero Trust'}
+              {submitting ? (
+                <span className="btn-loading-flex">
+                  <span className="spinner-sm" aria-hidden="true"></span>
+                  <span>Authenticating Identity...</span>
+                </span>
+              ) : (
+                'Sign In with Zero Trust'
+              )}
             </button>
 
             <div className="auth-footer-hint">
@@ -141,9 +165,11 @@ export default function AuthPage() {
                 id="reg-name"
                 type="text"
                 required
+                autoComplete="name"
                 placeholder="e.g., Alice Smith or Dr. Bob Jones"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
@@ -153,42 +179,54 @@ export default function AuthPage() {
                 id="reg-email"
                 type="email"
                 required
-                placeholder="e.g., alice@univ.edu"
+                autoComplete="email"
+                placeholder="e.g., student@univ.edu"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="reg-password">Password</label>
+              <label htmlFor="reg-password">Password (Minimum 6 characters)</label>
               <input
                 id="reg-password"
                 type="password"
                 required
                 minLength={6}
-                placeholder="Minimum 6 characters"
+                autoComplete="new-password"
+                placeholder="Create secure password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
+                disabled={submitting}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="reg-role">Role</label>
+              <label htmlFor="reg-role">Account Role</label>
               <select
                 id="reg-role"
                 value={regRole}
                 onChange={(e) => setRegRole(e.target.value)}
+                disabled={submitting}
               >
-                <option value="student">Student (Assignment Submitter)</option>
-                <option value="faculty">Faculty (Course Evaluator)</option>
+                <option value="student">🎓 Student (Submit Assignments)</option>
+                <option value="faculty">🏛️ Faculty (Evaluate & Grade Coursework)</option>
               </select>
               <span className="field-hint">
-                Admin registration is restricted and cannot be self-selected.
+                Administrator access is restricted to predefined security principals.
               </span>
             </div>
 
             <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting ? 'Creating Account...' : 'Complete Registration'}
+              {submitting ? (
+                <span className="btn-loading-flex">
+                  <span className="spinner-sm" aria-hidden="true"></span>
+                  <span>Registering Identity...</span>
+                </span>
+              ) : (
+                'Complete Registration'
+              )}
             </button>
 
             <div className="auth-footer-hint">
@@ -203,6 +241,42 @@ export default function AuthPage() {
             </div>
           </form>
         )}
+
+        {/* Security Credentials Quick-Test Reference Card */}
+        <div className="quick-test-box">
+          <div className="quick-test-title">
+            <span>🛡️ Quick Test Identities</span>
+          </div>
+          <div className="quick-test-grid">
+            <button
+              type="button"
+              className="quick-fill-btn"
+              onClick={() => fillTestCredentials('admin@zerotrust.local', 'AdminPassword123!')}
+              title="Click to fill Admin credentials"
+            >
+              <span className="quick-role-badge role-admin">ADMIN</span>
+              <code>admin@zerotrust.local</code>
+            </button>
+            <button
+              type="button"
+              className="quick-fill-btn"
+              onClick={() => fillTestCredentials('student@univ.edu', 'Password123!')}
+              title="Click to fill Student credentials"
+            >
+              <span className="quick-role-badge role-student">STUDENT</span>
+              <code>student@univ.edu</code>
+            </button>
+            <button
+              type="button"
+              className="quick-fill-btn"
+              onClick={() => fillTestCredentials('faculty@univ.edu', 'Password123!')}
+              title="Click to fill Faculty credentials"
+            >
+              <span className="quick-role-badge role-faculty">FACULTY</span>
+              <code>faculty@univ.edu</code>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

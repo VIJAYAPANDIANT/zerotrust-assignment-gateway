@@ -377,10 +377,17 @@ export default function StudentDashboard() {
         </div>
         <div className="card-body">
           {loading ? (
-            <div className="placeholder-box">Loading submissions...</div>
+            <div className="loading-card" style={{ padding: '2.5rem' }}>
+              <div className="spinner"></div>
+              <p>Retrieving your coursework submissions...</p>
+            </div>
           ) : submissions.length === 0 ? (
-            <div className="placeholder-box">
-              No submissions recorded yet. Select an assignment above to upload your first solution.
+            <div className="empty-state-box">
+              <span className="empty-icon" aria-hidden="true">📁</span>
+              <p className="empty-title">No Coursework Submissions Yet</p>
+              <p className="empty-subtitle">
+                Select an assignment above, upload your PDF or Word document, and submit through the secure gateway.
+              </p>
             </div>
           ) : (
             <div className="table-responsive">

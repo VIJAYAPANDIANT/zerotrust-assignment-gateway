@@ -156,9 +156,18 @@ export default function FacultyDashboard() {
         </div>
         <div className="card-body">
           {loading ? (
-            <div className="placeholder-box">Loading student submissions...</div>
+            <div className="loading-card" style={{ padding: '2.5rem' }}>
+              <div className="spinner"></div>
+              <p>Loading student submissions...</p>
+            </div>
           ) : recentSubmissions.length === 0 ? (
-            <div className="placeholder-box">No student submissions recorded yet.</div>
+            <div className="empty-state-box">
+              <span className="empty-icon" aria-hidden="true">📥</span>
+              <p className="empty-title">No Student Submissions Yet</p>
+              <p className="empty-subtitle">
+                Student coursework submissions will appear here once submitted.
+              </p>
+            </div>
           ) : (
             <div className="faculty-table-wrapper">
               <table className="faculty-table">

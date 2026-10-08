@@ -50,11 +50,13 @@ export default function StudentSubmissions() {
           <p>Retrieving your submission records...</p>
         </div>
       ) : submissions.length === 0 ? (
-        <div className="card placeholder-box">
-          <p className="placeholder-text">
-            You haven't submitted any assignments yet.
+        <div className="card empty-state-box">
+          <span className="empty-icon" aria-hidden="true">📤</span>
+          <p className="empty-title">No Submissions Recorded Yet</p>
+          <p className="empty-subtitle">
+            You haven't submitted any coursework solutions yet.
           </p>
-          <Link to="/student/assignments" className="btn-action primary mt-4">
+          <Link to="/student/assignments" className="btn-primary mt-4">
             Browse Available Assignments →
           </Link>
         </div>

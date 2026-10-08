@@ -114,8 +114,12 @@ export default function StudentAssignments() {
           <p>Retrieving assignments from secure gateway...</p>
         </div>
       ) : assignments.length === 0 ? (
-        <div className="card placeholder-box">
-          <p>No coursework assignments have been published yet.</p>
+        <div className="card empty-state-box">
+          <span className="empty-icon" aria-hidden="true">📚</span>
+          <p className="empty-title">No Coursework Published Yet</p>
+          <p className="empty-subtitle">
+            Your instructors have not published any coursework assignments yet. Please check back later.
+          </p>
         </div>
       ) : (
         <div className="assignment-cards-list">

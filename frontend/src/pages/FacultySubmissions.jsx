@@ -79,11 +79,13 @@ export default function FacultySubmissions() {
           <p>Retrieving student submissions from gateway...</p>
         </div>
       ) : filteredSubmissions.length === 0 ? (
-        <div className="card placeholder-box">
-          <p className="placeholder-text">
+        <div className="card empty-state-box">
+          <span className="empty-icon" aria-hidden="true">🔍</span>
+          <p className="empty-title">No Submissions Found</p>
+          <p className="empty-subtitle">
             {filter === 'all'
               ? 'No student submissions have been recorded yet.'
-              : `No submissions matching "${filter}" status.`}
+              : `No submissions matching "${filter}" status filter.`}
           </p>
         </div>
       ) : (

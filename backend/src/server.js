@@ -22,7 +22,18 @@ app.use('/uploads', express.static(path.resolve('uploads')));
 // 4. Cloudflare Access Edge Boundary Verification
 app.use(verifyCloudflareAccess);
 
-// 5. API Routes
+// 5. Root Route (Friendly Status & Frontend Link)
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'ZeroTrust Assignment Gateway API',
+    status: 'ONLINE',
+    frontend: 'http://localhost:5173',
+    healthCheck: '/api/health',
+    message: 'Welcome to the ZeroTrust Backend API. Visit http://localhost:5173 to access the web application.'
+  });
+});
+
+// 6. API Routes
 app.use('/api', apiRoutes);
 
 // 5. 404 Handler for undefined routes

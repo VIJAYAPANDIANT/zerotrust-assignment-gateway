@@ -43,4 +43,29 @@ export const UserModel = {
     );
     return res.rows[0];
   },
+
+  /**
+   * Update user password
+   * @param {string} email
+   * @param {string} hashedPassword
+   * @returns {Promise<Object|null>}
+   */
+  async updatePassword(email, hashedPassword) {
+    const res = await query(
+      'UPDATE users SET password = $1 WHERE LOWER(email) = LOWER($2) RETURNING id, name, email, role',
+      [hashedPassword, email]
+    );
+    return res.rows[0] || null;
+  },
+
+  /**
+   * List all users
+   * @returns {Promise<Array>}
+   */
+  async listAll() {
+    const res = await query(
+      'SELECT id, name, email, role, created_at FROM users ORDER BY role, name ASC'
+    );
+    return res.rows || [];
+  },
 };

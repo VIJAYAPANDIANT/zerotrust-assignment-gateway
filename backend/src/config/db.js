@@ -2,6 +2,7 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import { config } from './environment.js';
 import crypto from 'crypto';
+import { SEED_USERS } from './seedUsers.data.js';
 
 let pool = null;
 let isDbConnected = false;
@@ -14,7 +15,7 @@ const defaultAssignments = [
     description:
       'Analyze core Zero Trust principles (NIST SP 800-207) and explain how microsegmentation and continuous verification mitigate lateral movement in enterprise networks.',
     deadline: '2026-10-25T23:59:59.000Z',
-    created_by: 'faculty-evaluator-uuid',
+    created_by: 'faculty-00000000-0000-4000-8000-000000000001',
     faculty_name: 'Dr. Alan Vance',
     created_at: '2026-10-01T10:00:00.000Z',
   },
@@ -24,7 +25,7 @@ const defaultAssignments = [
     description:
       'Document the deployment of an outbound-only reverse tunnel using cloudflared. Evaluate the security posture differences between legacy VPNs and edge identity assertions.',
     deadline: '2026-11-05T23:59:59.000Z',
-    created_by: 'faculty-evaluator-uuid',
+    created_by: 'faculty-00000000-0000-4000-8000-000000000001',
     faculty_name: 'Dr. Alan Vance',
     created_at: '2026-10-02T10:00:00.000Z',
   },
@@ -34,25 +35,15 @@ const defaultAssignments = [
     description:
       'Implement an Express verification handler that parses Cf-Access-Jwt-Assertion headers and validates them using Cloudflare JWKS public keys.',
     deadline: '2026-11-20T23:59:59.000Z',
-    created_by: 'faculty-evaluator-uuid',
+    created_by: 'faculty-00000000-0000-4000-8000-000000000001',
     faculty_name: 'Dr. Alan Vance',
     created_at: '2026-10-03T10:00:00.000Z',
   },
 ];
 
-// Pre-seed an administrative user for testing and bootstrap
-const defaultAdminUser = {
-  id: 'admin-00000000-0000-4000-8000-000000000000',
-  name: 'Security Administrator',
-  email: 'admin@zerotrust.local',
-  password: '$2b$10$BmMEIqTWVIWRU1tYBYP1du4.GMZwdqB5MBGFjVwCQ7VTkPNwuUQSe',
-  role: 'admin',
-  created_at: '2026-10-01T00:00:00.000Z',
-};
-
 // In-memory development repository for fallback testing
 export const inMemoryData = {
-  users: [{ ...defaultAdminUser }],
+  users: [...SEED_USERS],
   assignments: [...defaultAssignments],
   submissions: [],
   access_logs: [],
@@ -154,6 +145,26 @@ function handleInMemoryQuery(text, params) {
     inMemoryData.users.push(record);
     const { password: _, ...safeRecord } = record;
     return { rows: [safeRecord] };
+  }
+
+  // 3b. UPDATE users SET password
+  if (/UPDATE users SET password/is.test(cleanSql)) {
+    const [newPassword, emailToUpdate] = params;
+    const user = inMemoryData.users.find(
+      (u) => u.email.toLowerCase() === emailToUpdate?.toLowerCase()
+    );
+    if (user) {
+      user.password = newPassword;
+      const { password: _, ...safeUser } = user;
+      return { rows: [safeUser] };
+    }
+    return { rows: [] };
+  }
+
+  // 3c. SELECT all users ordered
+  if (/SELECT.*FROM users.*ORDER BY/is.test(cleanSql)) {
+    const safeUsers = inMemoryData.users.map(({ password: _, ...u }) => u);
+    return { rows: safeUsers };
   }
 
   // 4a. INSERT INTO assignments

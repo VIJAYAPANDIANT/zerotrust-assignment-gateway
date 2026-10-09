@@ -47,6 +47,32 @@ export async function loginUser({ email, password }) {
   return handleResponse(response);
 }
 
+export async function forgotPasswordApi(email) {
+  const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return handleResponse(response);
+}
+
+export async function resetPasswordApi({ email, newPassword }) {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, newPassword }),
+  });
+  return handleResponse(response);
+}
+
+export async function getDirectoryApi() {
+  const response = await fetch(`${API_BASE_URL}/auth/directory`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return handleResponse(response);
+}
+
 export async function getMe(token) {
   const response = await fetch(`${API_BASE_URL}/auth/me`, {
     method: 'GET',

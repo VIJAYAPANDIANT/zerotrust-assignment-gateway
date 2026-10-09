@@ -266,3 +266,134 @@ export const getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * POST /api/auth/forgot-password
+ * Initiates password recovery for a pre-enrolled user.
+ */
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your institutional email address.',
+      });
+    }
+
+    const user = await UserModel.findByEmail(email.trim());
+    if (!user) {
+      await AuditModel.logAccess({
+        endpoint: '/api/auth/forgot-password',
+        action: 'FORGOT_PASSWORD_NOT_FOUND',
+        result: 'BLOCK',
+        ipAddress: req.ip,
+      });
+
+      return res.status(404).json({
+        success: false,
+        message: 'No institutional account found with this email address.',
+      });
+    }
+
+    await AuditModel.logAccess({
+      userId: user.id,
+      endpoint: '/api/auth/forgot-password',
+      action: 'FORGOT_PASSWORD_VERIFIED',
+      result: 'ALLOW',
+      ipAddress: req.ip,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Identity verified for ${user.name} (${user.role.toUpperCase()}). You may now reset your password.`,
+      data: {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Updates the password for a verified pre-enrolled user.
+ */
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and new password are required.',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long.',
+      });
+    }
+
+    const user = await UserModel.findByEmail(email.trim());
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found.',
+      });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    await UserModel.updatePassword(user.email, hashedPassword);
+
+    await AuditModel.logAccess({
+      userId: user.id,
+      endpoint: '/api/auth/reset-password',
+      action: 'PASSWORD_RESET_SUCCESS',
+      result: 'ALLOW',
+      ipAddress: req.ip,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password successfully updated. You may now log in.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/auth/directory
+ * Public/institutional directory of pre-registered accounts for demo evaluation
+ */
+export const getDirectory = async (req, res, next) => {
+  try {
+    const allUsers = await UserModel.listAll();
+    const students = allUsers.filter((u) => u.role === 'student');
+    const faculty = allUsers.filter((u) => u.role === 'faculty');
+    const admins = allUsers.filter((u) => u.role === 'admin');
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        counts: {
+          total: allUsers.length,
+          students: students.length,
+          faculty: faculty.length,
+          admins: admins.length,
+        },
+        students,
+        faculty,
+        admins,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import AuthPage from './pages/AuthPage';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentAssignments from './pages/StudentAssignments';
@@ -84,9 +84,10 @@ function AppContent() {
   }
 
   return (
-    <div className="app-layout">
-      {user && <Navbar />}
-      <main className="main-content">
+    <div className={`app-layout ${user ? 'with-sidebar' : 'auth-mode'}`}>
+      {user && <Sidebar />}
+      <div className="main-wrapper">
+        <main className="main-content">
         <Routes>
           {/* Root Entrypoint */}
           <Route
@@ -182,6 +183,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      </div>
     </div>
   );
 }

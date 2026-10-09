@@ -745,26 +745,54 @@ body::before {
 
 .auth-split-wrapper {
   width: 100%;
-  max-width: 1140px;
+  max-width: 1160px;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2.5rem;
-  align-items: center;
+  gap: 2rem;
+  align-items: stretch;
   z-index: 2;
 }
 
 @media (min-width: 960px) {
   .auth-split-wrapper {
-    grid-template-columns: 1.1fr 1fr;
-    gap: 3.5rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.25rem;
+    align-items: stretch;
   }
 }
 
-/* Left Hero Telemetry Panel */
+/* Left Hero Telemetry Panel (Equal Dimension Card) */
 .auth-hero-panel {
+  background: rgba(16, 25, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem 2rem;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  justify-content: space-between;
+  height: 100%;
+  gap: 1.5rem;
+}
+
+.auth-hero-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, transparent);
+}
+
+.auth-hero-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .auth-badge-kicker {
@@ -785,10 +813,10 @@ body::before {
 }
 
 .auth-hero-title {
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-size: clamp(1.75rem, 2.5vw, 2.2rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
   color: var(--text-primary);
 }
 
@@ -799,18 +827,16 @@ body::before {
 }
 
 .auth-hero-desc {
-  font-size: 1rem;
+  font-size: 0.925rem;
   color: var(--text-muted);
-  line-height: 1.6;
-  max-width: 48ch;
+  line-height: 1.55;
 }
 
 /* Telemetry Pillar Grid */
 .telemetry-features {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.85rem;
-  margin-top: 0.5rem;
+  gap: 0.75rem;
 }
 
 @media (min-width: 640px) {
@@ -820,13 +846,13 @@ body::before {
 }
 
 .telemetry-card {
-  background: rgba(16, 25, 42, 0.7);
+  background: rgba(10, 15, 29, 0.65);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 1rem;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
@@ -839,22 +865,23 @@ body::before {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .telemetry-card-icon {
   color: #38bdf8;
+  flex-shrink: 0;
 }
 
 .telemetry-card-text {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-/* Right Authentication Terminal Card */
+/* Right Authentication Terminal Card (Equal Dimension Card) */
 .auth-terminal-card {
   background: rgba(16, 25, 42, 0.85);
   backdrop-filter: blur(16px);
@@ -865,6 +892,10 @@ body::before {
   box-shadow: var(--shadow-lg), var(--shadow-glow);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
 .auth-terminal-card::before {
@@ -875,6 +906,35 @@ body::before {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, transparent);
+}
+
+.terminal-footer-security {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.security-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.security-status-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #34d399;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.security-status-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .auth-card-top {

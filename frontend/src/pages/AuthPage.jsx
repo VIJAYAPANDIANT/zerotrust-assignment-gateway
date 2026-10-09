@@ -115,19 +115,21 @@ export default function AuthPage() {
       <div className="auth-split-wrapper">
         {/* Left Section: Enterprise Zero Trust Architecture & Telemetry */}
         <div className="auth-hero-panel">
-          <div className="auth-badge-kicker">
-            <ShieldCheck size={16} weight="duotone" />
-            <span>Zero Trust Boundary • Enforced</span>
+          <div className="auth-hero-top">
+            <div className="auth-badge-kicker">
+              <ShieldCheck size={16} weight="duotone" />
+              <span>Zero Trust Boundary • Enforced</span>
+            </div>
+
+            <h1 className="auth-hero-title">
+              Academic Coursework <span>Submission Gateway</span>
+            </h1>
+
+            <p className="auth-desc">
+              Continuous cryptographic verification, role-based boundaries, and private object isolation
+              for pre-enrolled students and faculty.
+            </p>
           </div>
-
-          <h1 className="auth-hero-title">
-            Academic Coursework <span>Submission Gateway</span>
-          </h1>
-
-          <p className="auth-desc">
-            Continuous cryptographic verification, role-based boundaries, and private object isolation
-            for pre-enrolled students and faculty.
-          </p>
 
           <div className="telemetry-features">
             <div className="telemetry-card">
@@ -260,6 +262,17 @@ export default function AuthPage() {
               )}
             </button>
           </form>
+
+          {/* Bottom Security Assurance Footnote */}
+          <div className="terminal-footer-security">
+            <div className="security-status-indicator">
+              <span className="pulse-dot"></span>
+              <span className="security-status-label">Continuous Verification Active</span>
+            </div>
+            <span className="security-status-desc">
+              NIST SP 800-207 Zero Trust Architecture • Role-Isolated Gateway
+            </span>
+          </div>
         </div>
       </div>
 

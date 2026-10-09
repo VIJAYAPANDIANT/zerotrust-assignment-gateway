@@ -212,7 +212,7 @@ export default function AuthPage() {
                   className="form-input input-has-icon"
                   required
                   autoComplete="email"
-                  placeholder="Enter email ID"
+                  placeholder="Enter your email address"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   disabled={submitting}

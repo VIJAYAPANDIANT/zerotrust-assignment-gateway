@@ -125,24 +125,44 @@ The platform is pre-loaded with **36 verified accounts**:
 
 ## 3. Technology Stack
 
-### Frontend Architecture
-- **Framework:** [React 19](https://react.dev/)
-- **Build Engine:** [Vite 6](https://vite.dev/)
-- **State Management:** React Context API (`AuthContext.jsx`) with persistent session recovery
-- **Routing:** React Router v7 (`App.jsx`) with strict role-guarded routes (`ProtectedRoute.jsx`)
-- **Styling:** Modern, cyber-grade dark theme with balanced 50/50 glassmorphic auth cards, glowing cyan accents, and mobile-responsive viewport breakpoints.
+The platform is engineered using modern, enterprise-proven technologies across the entire Zero Trust pipeline:
 
-### Backend Architecture
-- **Runtime:** [Node.js](https://nodejs.org/) (v20+ LTS / v24)
-- **Framework:** [Express.js](https://expressjs.com/) (Modular MVC pattern)
-- **Cryptography:** `bcryptjs` (Salt factor 10) + `jsonwebtoken` (HMAC-SHA256)
-- **Multipart Upload:** `multer` with strict MIME-type inspection (PDF/DOC/DOCX) and 15MB file cap
-- **Database Driver:** `pg` (PostgreSQL client pool for Supabase) with in-memory resilient fallback
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   TECHNOLOGY MATRIX                                    │
+├─────────────────┬──────────────────┬──────────────────┬────────────────────────────────┤
+│    CLIENT UI    │  EDGE SECURITY   │   ORIGIN CORE    │       DATA & PERSISTENCE       │
+│  React 19.2.8   │ Cloudflare Access│  Node.js v20+ LTS│     PostgreSQL 15+ (pg 8.23)   │
+│   Vite 8.3.0    │ cloudflared (ZTA)│  Express 4.21.2  │     Supabase JS Client 2.117   │
+│ React Router 7  │  Cloudflare WAF  │  bcryptjs 3.0.3  │   Encrypted Storage (Bucket)   │
+│ Phosphor Icons  │  Edge JWT Assert │jsonwebtoken 9.0.3│   In-Memory High-Speed Cache   │
+└─────────────────┴──────────────────┴──────────────────┴────────────────────────────────┘
+```
 
-### Cloud & Edge Infrastructure
-- **Zero Trust Ingress:** Cloudflare Tunnel (`cloudflared`)
-- **Identity Proxy:** Cloudflare Access (IdP Assertion Header validation)
-- **Database & Storage:** Supabase PostgreSQL 15+ and private encrypted object storage buckets
+### 3.1 Technology Stack Matrix
+
+| Domain / Layer | Technology | Exact Version | Role in Architecture | Zero Trust Security Responsibility |
+| :--- | :--- | :---: | :--- | :--- |
+| **Frontend Framework** | [React](https://react.dev/) | `19.2.8` | Component-driven Single Page Application (SPA). | Client-side role-isolated rendering; prevents unauthorized view leakage. |
+| **Frontend Bundler** | [Vite](https://vite.dev/) | `8.3.0` | Next-generation ESM dev server & optimized production bundler. | Sub-second HMR and tree-shaken, minified production assets. |
+| **Client Routing** | [React Router](https://reactrouter.com/) | `7.18.4` | Declarative client-side routing and layout orchestration. | `ProtectedRoute` guards ensuring non-authenticated users cannot access dashboard URLs. |
+| **Client State** | React Context API | Built-in | Centralized authentication session store (`AuthContext.jsx`). | Secure bearer token management and instantaneous session termination on logout. |
+| **Iconography** | [Phosphor Icons](https://phosphoricons.com/) | `2.1.10` | Cyber-aesthetic duotone and bold security glyphs. | High-visibility status pills (`ALLOW`, `BLOCK`, `FAILURE`) and role iconography. |
+| **Styling & UI** | CSS3 Modern Custom Properties | Native | Symmetrical 50/50 split authentication terminal, glassmorphic HUD. | Responsive layout, dark cyber theme, and snug fit-content role indicators. |
+| **Edge Access Proxy** | [Cloudflare Access](https://www.cloudflare.com/products/zero-trust/access/) | Managed Edge | Identity-Aware Proxy (IAP) in front of origin application. | Enforces IdP authentication and generates edge-signed `Cf-Access-Jwt-Assertion` tokens. |
+| **Secure Origin Ingress** | [Cloudflare Tunnel](https://www.cloudflare.com/products/tunnel/) | `cloudflared` | Outbound-only encrypted tunnel daemon. | **Zero inbound open ports** (port 80/443 closed); eliminates direct origin IP targeting and DDoS. |
+| **Edge Defense** | Cloudflare WAF & Bot Fight | Managed Edge | L7 payload inspection, rate-limiting, and anomaly detection. | Blocks OWASP Top 10 injection attacks and credential stuffing before traffic hits origin. |
+| **Backend Runtime** | [Node.js](https://nodejs.org/) | `v20+ LTS` / `v24` | Asynchronous event-driven server runtime. | High-concurrency non-blocking I/O for file streaming and authentication pipelines. |
+| **Backend Framework** | [Express.js](https://expressjs.com/) | `4.21.2` | Modular REST API server architecture (MVC). | Strict middleware chaining for JWT decoding, RBAC enforcement, and error masking. |
+| **Cryptographic Hashing** | [bcryptjs](https://github.com/dcodeIO/bcrypt.js) | `3.0.3` | Password hashing algorithm with salted entropy. | Irreversible one-way credential storage with 10 salt rounds; resists dictionary attacks. |
+| **Session Cryptography** | [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) | `9.0.3` | HMAC-SHA256 signed bearer token generator & verifier. | Stateless, tamper-evident identity claims containing immutable user ID and role. |
+| **Multipart Uploads** | [Multer](https://github.com/expressjs/multer) | `2.4.0` | Streaming file upload parser for coursework submissions. | Strict MIME-type validation (`.pdf`, `.doc`, `.docx`) and hard 15MB file size boundary. |
+| **Cross-Origin Security** | [cors](https://expressjs.com/en/resources/middleware/cors.html) | `2.8.5` | Cross-Origin Resource Sharing middleware. | Restricts API access exclusively to whitelisted frontend origin (`http://localhost:5173`). |
+| **Database Driver** | [pg (node-postgres)](https://node-postgres.com/) | `8.23.1` | PostgreSQL client pool connection manager. | Parameterized SQL queries preventing SQL injection; connection pooling for scalability. |
+| **Cloud Database** | [Supabase PostgreSQL](https://supabase.com/) | `15+` | ACID-compliant relational cloud persistence layer. | Foreign key cascading, unique composite constraints, and immutable audit logs. |
+| **Encrypted File Store** | [Supabase Storage](https://supabase.com/storage) | `2.117.2` | Private object storage bucket (`assignments`). | Files are non-public; accessible solely through authenticated ephemeral signed URLs. |
+| **Resilient Store** | In-Memory Failover Engine | Native JS | High-speed in-memory store mirroring relational tables. | Zero-downtime offline testing and fallback when cloud database is unreachable. |
+| **Code Quality & Linter** | [Oxlint](https://oxc.rs/) | `1.81.0` | Ultra-fast Rust-based JavaScript/JSX linter. | Enforces clean code conventions, catches syntax errors, and validates JSX safety. |
 
 ---
 

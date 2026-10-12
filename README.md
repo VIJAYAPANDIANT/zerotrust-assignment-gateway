@@ -29,6 +29,7 @@ For exhaustive technical references, consult the dedicated documentation files i
 | Documentation Document | Primary Focus |
 | :--- | :--- |
 | 🔑 **[`docs/USER_CREDENTIALS.md`](docs/USER_CREDENTIALS.md)** | Complete credentials directory for all **36 pre-enrolled accounts** (1 Admin, 5 Faculty, 30 Students) with Roll IDs, password reset workflow, and seed instructions. |
+| 🛡️ **[`docs/CLOUDFLARE_IMPLEMENTATION_GUIDE.md`](docs/CLOUDFLARE_IMPLEMENTATION_GUIDE.md)** | Complete setup guide for all **6 Cloudflare Zero Trust features** (Tunnels, Access, WAF, Bot Fight, JWT assertions, and DoH DNS). |
 | 🏛️ **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** | Deep-dive into NIST SP 800-207 tenets, Two-Tier defense topology, Mermaid sequence diagrams, and threat mitigation models. |
 | 🔌 **[`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md)** | Full REST API specification (`/api/auth`, `/api/assignments`, `/api/submissions`, `/api/faculty`, `/api/security`, `/api/health`) with payloads and responses. |
 | 🚀 **[`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md)** | Operational deployment manual for local development, Supabase PostgreSQL configuration, Cloudflare Tunnel CLI setup, and production hardening. |

@@ -26,8 +26,8 @@ export const corsOptions = {
       return callback(null, true);
     }
 
-    // 3. In development mode, permit localhost ports
-    if (config.nodeEnv === 'development' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    // 3. In development mode, permit localhost ports and Cloudflare Quick Tunnels
+    if (config.nodeEnv === 'development' && (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || /\.trycloudflare\.com$/.test(origin))) {
       return callback(null, true);
     }
 

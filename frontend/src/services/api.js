@@ -1,13 +1,24 @@
 /**
  * API Base URL Configuration
  * Reads from Vite environment variable in production or local environments.
- * - VITE_API_BASE_URL or VITE_API_URL can specify absolute backend endpoint (e.g., https://api.gateway.edu/api)
- * - Fallbacks: In development defaults to http://localhost:5000/api; in production defaults to relative '/api'
+ * - VITE_API_BASE_URL or VITE_API_URL can specify an absolute backend endpoint
+ *   (e.g., https://api.gateway.edu/api or a Cloudflare tunnel URL)
+ * - Fallback: Defaults to relative '/api' (proxied to http://localhost:5000 in dev)
  */
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  '/api';
+const getApiBaseUrl = () => {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();
+  if (!envUrl) {
+    return '/api';
+  }
+  const cleanUrl = envUrl.replace(/\/+$/, '');
+  // If user passed a full http(s) origin without /api, append /api automatically
+  if (/^https?:\/\/[^/]+$/.test(cleanUrl)) {
+    return `${cleanUrl}/api`;
+  }
+  return cleanUrl;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Handle HTTP response and JSON parsing

@@ -231,6 +231,37 @@ In the [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com):
 
 ---
 
+## 5.1 Cloudflare Workers Frontend Static Assets Deployment
+
+The React 19 / Vite 8 frontend is designed for direct deployment to **Cloudflare Workers Static Assets** (Workers Builds or CLI):
+
+### 1. Cloudflare Dashboard Settings (Workers & Pages)
+- **Root directory:** `/`
+- **Build command:** `npm run build`
+- **Deploy command:** `npx wrangler deploy`
+- **Build output directory:** `dist`
+
+### 2. Environment Variables (Cloudflare Dashboard)
+Under **Workers -> Settings -> Variables and Secrets**:
+- `VITE_API_BASE_URL`: Set to your deployed backend origin or active Cloudflare Tunnel URL (e.g. `https://your-tunnel.trycloudflare.com` or `https://api.yourdomain.edu/api`).
+
+### 3. Static Asset Architecture (`wrangler.json`)
+The gateway serves the compiled Vite output from `dist/` with single-page application fallback:
+```json
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zerotrust-assignment-gateway",
+  "compatibility_date": "2026-11-02",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
+```
+All React Router paths (`/student/dashboard`, `/faculty/dashboard`, `/security/logs`) resolve seamlessly to `index.html` on direct loads and page refreshes.
+
+---
+
 ## 6. Pre-Enrolled User Verification
 
 The gateway implements a closed-enrollment security directory initialized with **36 enterprise identities**:
